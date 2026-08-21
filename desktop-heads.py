@@ -11,7 +11,9 @@ panel sits at the top of the primary (y=342), while Fluxbox publishes a
   * icons on the primary start under tint2
 
 Advertise _GTK_WORKAREAS (the per-monitor list GTK actually uses) and
-restart the pcmanfm desktop when the head count does not match.
+rebuild the pcmanfm desktop whenever the head count or the published
+rects change -- pcmanfm samples its working area once per desktop window
+and afterwards only listens for _NET_WORKAREA, which never moves here.
 """
 from __future__ import annotations
 
@@ -19,18 +21,32 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 
 from Xlib import X, Xatom, display, error
 from Xlib.ext import randr
 
 PROFILE = "fluxbox-music"
-# Matches session.screen0.struts.1 on the primary (Xinerama head 1).
-DEFAULT_PRIMARY_TOP = 56
+# Fallback top inset for the primary when tint2 is not up yet (startup runs
+# us once before the panel exists). Keyed by panel-size.sh's profile file so
+# the desktop pcmanfm builds at startup matches the panel about to appear.
+PANEL_TOP = {"compact": 30, "normal": 56}
+DEFAULT_PRIMARY_TOP = PANEL_TOP["normal"]
+PROFILE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "panel-profile")
 RESTART_COOLDOWN = 5.0
 
 
 def intern(d, name):
     return d.intern_atom(name)
+
+
+def default_primary_top():
+    try:
+        with open(PROFILE_FILE) as f:
+            return PANEL_TOP[f.readline().strip()]
+    except (OSError, KeyError):
+        return DEFAULT_PRIMARY_TOP
 
 
 def monitors(d):
@@ -118,7 +134,7 @@ def workareas(d, atom_type, atom_dock, heads):
         x, y, w, h = mon["x"], mon["y"], mon["w"], mon["h"]
         top = tint2_top_inset(d, atom_type, atom_dock, mon)
         if top == 0 and mon["primary"]:
-            top = DEFAULT_PRIMARY_TOP
+            top = default_primary_top()
         y += top
         h = max(1, h - top)
         rects.extend([x, y, w, h])
@@ -176,13 +192,21 @@ def publish_workareas(d, atom_type, atom_dock, atom_nd, atom_supported, atom_gtk
 
 def restart_pcmanfm_desktop():
     env = os.environ.copy()
-    subprocess.run(
-        ["pcmanfm", "--desktop-off"],
-        env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
+    # --profile matters: pcmanfm's single-instance socket is per profile, so a
+    # bare --desktop-off talks to (and spawns) a default-profile daemon and
+    # leaves this session's desktop running. Time it out too -- when no daemon
+    # answers, pcmanfm can sit there being one.
+    try:
+        subprocess.run(
+            ["pcmanfm", "--desktop-off", "--profile", PROFILE],
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        pass
     time.sleep(0.4)
     subprocess.Popen(
         ["pcmanfm", "--desktop", "--profile", PROFILE],
@@ -236,6 +260,9 @@ def heads_sig(heads, rects):
 
 def main(argv):
     once = "--once" in argv
+    # --resync also rebuilds the desktop, for callers that changed the panel
+    # height and cannot wait for (or do not have) the watcher.
+    resync = "--resync" in argv
     d = display.Display()
     if not d.has_extension("RANDR"):
         sys.exit("X server has no RANDR extension")
@@ -251,7 +278,7 @@ def main(argv):
 
     wait_heads_stable(d)
 
-    if once:
+    if once or resync:
         publish_workareas(
             d,
             atoms["type"],
@@ -260,6 +287,8 @@ def main(argv):
             atoms["supported"],
             atoms["gtk"],
         )
+        if resync:
+            restart_pcmanfm_desktop()
         return
 
     last_restart = 0.0
@@ -272,36 +301,52 @@ def main(argv):
     next_poll = time.monotonic() + 2.0
 
     while True:
-        dirty = False
-        if d.pending_events():
-            ev = d.next_event()
-            if ev.type == X.PropertyNotify:
-                dirty = ev.atom in (atoms["supported"], atoms["nd"])
+        try:
+            dirty = False
+            if d.pending_events():
+                ev = d.next_event()
+                if ev.type == X.PropertyNotify:
+                    dirty = ev.atom in (atoms["supported"], atoms["nd"])
+                else:
+                    dirty = True
             else:
+                time.sleep(0.2)
+
+            now = time.monotonic()
+            if now >= next_poll:
                 dirty = True
-        else:
-            time.sleep(0.2)
+                next_poll = now + 2.0
 
-        now = time.monotonic()
-        if now >= next_poll:
-            dirty = True
-            next_poll = now + 2.0
+            if not dirty:
+                continue
 
-        if not dirty:
-            continue
+            time.sleep(0.15)
+            while d.pending_events():
+                d.next_event()
 
-        time.sleep(0.15)
-        while d.pending_events():
-            d.next_event()
-
-        heads, rects, n_desk, last_restart = apply(d, atoms, last_restart)
-        new_sig = heads_sig(heads, rects)
-        if new_sig != signature:
-            signature = new_sig
-            if n_desk != len(heads):
-                heads, rects, n_desk, last_restart = apply(
-                    d, atoms, last_restart, force_restart=True
-                )
+            heads, rects, n_desk, last_restart = apply(d, atoms, last_restart)
+            new_sig = heads_sig(heads, rects)
+            if new_sig != signature:
+                old_rects = signature[1]
+                signature = new_sig
+                # pcmanfm reads its working area once, when it builds a desktop
+                # window, and afterwards only reacts to _NET_WORKAREA -- which
+                # never moves here, because the panel is not at the top of the
+                # virtual screen. So a changed rect (panel-size.sh toggling
+                # 56<->30, or the panel finally appearing after our startup
+                # --once ran) needs the desktop rebuilt, not just republished,
+                # or the top icon row stays under tint2.
+                if n_desk != len(heads) or tuple(rects) != tuple(old_rects):
+                    heads, rects, n_desk, last_restart = apply(
+                        d, atoms, last_restart, force_restart=True
+                    )
+                    signature = heads_sig(heads, rects)
+        except Exception:
+            # A transient BadWindow while probing a dying client used to end
+            # the watcher silently, and nothing restarted it: workareas then
+            # stayed frozen for the rest of the session.
+            traceback.print_exc()
+            time.sleep(1.0)
 
 
 if __name__ == "__main__":

@@ -100,6 +100,20 @@ place_tint2() {
   done
 }
 
+resync_desktop() {
+  # The panel just changed height, so the per-monitor workareas moved.
+  # pcmanfm samples its working area once per desktop window and afterwards
+  # only watches _NET_WORKAREA -- which never moves here, because the panel is
+  # not at the top of the virtual screen -- so the desktop has to be rebuilt or
+  # the top icon row ends up under tint2. desktop-heads.py does that on its own
+  # within a poll when it is running; only step in when it is not.
+  [ -x "${FLUX}/desktop-heads.py" ] || return 0
+  if pgrep -f "${FLUX}/desktop-heads.py" >/dev/null 2>&1; then
+    return 0
+  fi
+  "${FLUX}/desktop-heads.py" --resync >/dev/null 2>&1 || true
+}
+
 restart_tray() {
   # tint2 owns the tray; applets must be restarted after the panel returns.
   for p in pasystray nm-applet; do
@@ -112,8 +126,14 @@ restart_tray() {
     i=$((i + 1))
   done
   sleep 0.25
-  have pasystray && ! pgrep -x pasystray >/dev/null 2>&1 && pasystray >/dev/null 2>&1 &
-  have nm-applet && ! pgrep -x nm-applet >/dev/null 2>&1 && nm-applet >/dev/null 2>&1 &
+  # Use if/fi so `&` backgrounds only the applet. An `A && B && cmd &` list
+  # runs in a subshell that waits on cmd, leaving orphan shells forever.
+  if have pasystray && ! pgrep -x pasystray >/dev/null 2>&1; then
+    pasystray >/dev/null 2>&1 &
+  fi
+  if have nm-applet && ! pgrep -x nm-applet >/dev/null 2>&1; then
+    nm-applet >/dev/null 2>&1 &
+  fi
 }
 
 apply_profile() {
@@ -141,6 +161,7 @@ apply_profile() {
     place_tint2
     restart_tray
   fi
+  resync_desktop
 }
 
 cmd=${1:-show}
@@ -148,15 +169,25 @@ case "$cmd" in
   show)
     current_profile
     ;;
-  normal|compact)
-    apply_profile "$cmd"
-    ;;
-  toggle)
-    cur=$(current_profile)
-    if [ "$cur" = compact ]; then
-      apply_profile normal
+  normal|compact|toggle)
+    # Serialize profile changes; double-clicks from the menu used to race
+    # two restarts and leave orphan tray-holder shells.
+    lockdir="${FLUX}/panel-size.lock"
+    if mkdir "$lockdir" 2>/dev/null; then
+      trap 'rmdir "$lockdir" 2>/dev/null' EXIT
     else
-      apply_profile compact
+      echo "panel-size: already running" >&2
+      exit 0
+    fi
+    if [ "$cmd" = toggle ]; then
+      cur=$(current_profile)
+      if [ "$cur" = compact ]; then
+        apply_profile normal
+      else
+        apply_profile compact
+      fi
+    else
+      apply_profile "$cmd"
     fi
     ;;
   *)
