@@ -1,0 +1,195 @@
+#!/bin/sh
+#
+# Fluxbox music-production session
+# LightDM starts this via /usr/bin/startfluxbox.
+# XFCE autostart is intentionally NOT run.
+
+fluxdir="${HOME}/.fluxbox"
+
+export XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-Fluxbox}"
+export GDK_BACKEND=x11
+export QT_QPA_PLATFORM=xcb
+export GTK_THEME="${GTK_THEME:-Adwaita-dark}"
+export GTK_ICON_THEME_NAME="${GTK_ICON_THEME_NAME:-Adwaita-Red}"
+export XCURSOR_THEME="${XCURSOR_THEME:-Adwaita}"
+export XCURSOR_SIZE="${XCURSOR_SIZE:-24}"
+export GDK_SCALE=1
+export QT_AUTO_SCREEN_SCALE_FACTOR=0
+export JACK_NO_START_SERVER=1
+
+# Same plugin paths in every app started from this session
+export VST3_PATH="${HOME}/.vst3:${HOME}/vst3:/usr/lib/vst3${VST3_PATH:+:$VST3_PATH}"
+export VST_PATH="${HOME}/.vst:/usr/lib/vst${VST_PATH:+:$VST_PATH}"
+export CLAP_PATH="${HOME}/.clap:/usr/lib/clap${CLAP_PATH:+:$CLAP_PATH}"
+export LV2_PATH="${HOME}/.lv2:/usr/lib/lv2${LV2_PATH:+:$LV2_PATH}"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# Restore the saved 3-monitor layout before anything paints the desktop.
+if have autorandr; then
+    autorandr --change --default default >/dev/null 2>&1 || autorandr default >/dev/null 2>&1 || true
+fi
+
+# No beep, no screensaver blanking mid-take.
+if have xset; then
+    xset -b 2>/dev/null
+    xset s off 2>/dev/null
+    xset -dpms 2>/dev/null
+    xset s noblank 2>/dev/null
+fi
+
+# GTK theme / icons / cursor / DPI. Without this, X reports the L-shaped
+# virtual screen as ~45x143 DPI and the desktop looks broken.
+# apply-workspaces.sh stops xfsettingsd later: it copies XFCE workspace
+# names/count onto Fluxbox and would undo Internet/Audio.
+if have xfsettingsd; then
+    xfsettingsd --disable-wm-check --replace &
+fi
+
+if [ -f "${HOME}/.Xresources" ]; then
+    xrdb -merge "${HOME}/.Xresources" 2>/dev/null
+fi
+if [ -f "${fluxdir}/Xresources" ]; then
+    xrdb -merge "${fluxdir}/Xresources" 2>/dev/null
+fi
+if [ -f "${HOME}/.Xmodmap" ]; then
+    xmodmap "${HOME}/.Xmodmap" 2>/dev/null
+fi
+
+if have xsetroot; then
+    xsetroot -solid "#0b0b0d" 2>/dev/null
+    xsetroot -cursor_name left_ptr 2>/dev/null
+fi
+
+set_wallpaper() {
+    if have feh && [ -f "${fluxdir}/backgrounds/music-dark.png" ]; then
+        feh --no-fehbg --bg-fill "${fluxdir}/backgrounds/music-dark.png"
+    elif have feh; then
+        feh --no-fehbg --bg-fill --solid-bg "#0b0b0d" /usr/share/pixmaps/fluxbox.png 2>/dev/null || true
+    fi
+}
+
+place_tint2() {
+    have xdotool || return 0
+    have xrandr || return 0
+    i=0
+    while [ "$i" -lt 15 ]; do
+        wid=$(xdotool search --class Tint2 2>/dev/null | head -n 1) || wid=
+        if [ -n "$wid" ]; then
+            geom=$(xrandr --query | awk '/ primary / {
+                for (i = 1; i <= NF; i++)
+                    if ($i ~ /^[0-9]+x[0-9]+\+[0-9]+\+[0-9]+$/) print $i
+            }')
+            [ -n "$geom" ] || return 0
+            w=${geom%%x*}
+            rest=${geom#*x}
+            h=${rest%%+*}
+            rest=${rest#*+}
+            x=${rest%%+*}
+            y=${rest#*+}
+            ph=$(xdotool getwindowgeometry "$wid" 2>/dev/null | awk '/Geometry:/{split($2,a,"x"); print a[2]}')
+            ph=${ph:-56}
+            # Pin to the top of the primary, not the bottom of the virtual screen.
+            py=$y
+            xdotool windowmove "$wid" "$x" "$py" 2>/dev/null || true
+            xdotool windowsize "$wid" "$w" "$ph" 2>/dev/null || true
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 0.2
+    done
+}
+
+wait_heads() {
+    have xrandr || return 0
+    last=
+    i=0
+    while [ "$i" -lt 25 ]; do
+        n=$(xrandr --listactivemonitors 2>/dev/null | awk 'NR==1 { print $2 }')
+        n=${n:-0}
+        if [ -n "$last" ] && [ "$n" = "$last" ] && [ "$n" -ge 1 ] && [ "$i" -ge 3 ]; then
+            return 0
+        fi
+        last=$n
+        i=$((i + 1))
+        sleep 0.2
+    done
+}
+
+set_wallpaper
+
+# WM first, then compositor, then desktop / panel / tray.
+fluxbox -log "${fluxdir}/log" &
+fbpid=$!
+trap 'kill "$fbpid" 2>/dev/null; wait "$fbpid" 2>/dev/null' EXIT
+sleep 0.5
+
+if have picom; then
+    picom --config "${HOME}/.config/picom/fluxbox-music.conf" --daemon
+fi
+
+# pcmanfm only creates a desktop window per head at startup, and GTK's
+# primary workarea ignores a panel that is not at the virtual-screen top.
+# Wait for RandR to settle, publish per-monitor _GTK_WORKAREAS, then start
+# the desktop (and keep a watcher so Fluxbox restarts / hotplug stay in sync).
+wait_heads
+# Two workspaces for this session (Internet, Audio). XFCE xfconf is unchanged.
+if [ -x "${fluxdir}/apply-workspaces.sh" ]; then
+    "${fluxdir}/apply-workspaces.sh" || true
+fi
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${fluxdir}/desktop-heads.py" ]; then
+    "${fluxdir}/desktop-heads.py" --once || true
+fi
+if have pcmanfm; then
+    pcmanfm --desktop --profile fluxbox-music &
+fi
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${fluxdir}/desktop-heads.py" ]; then
+    "${fluxdir}/desktop-heads.py" &
+fi
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${fluxdir}/audacious-stack.py" ]; then
+    "${fluxdir}/audacious-stack.py" &
+fi
+
+if have tint2; then
+    tint2 -c "${HOME}/.config/tint2/fluxbox-music.tint2rc" &
+    place_tint2 &
+fi
+
+# Named dock, not the default "dock1" used by XFCE.
+# Fluxbox layers: 2=AboveDock (always on top), 8=Normal. Stay on 2 so
+# maximized DAWs cannot bury the dock; hover-to-unhide cannot work here
+# because the primary's bottom is not the virtual screen's bottom.
+if have plank; then
+    plank -n music &
+    # Fluxbox reparents Plank and copies only the bounding shape to the frame,
+    # never the input shape, so the frame swallows clicks across its full
+    # 1920x168 rect -- the bottom band of the primary, where DAW device
+    # sliders live. Keep the frame's input shape synced to Plank's.
+    if python3 -c "import Xlib" >/dev/null 2>&1; then
+        "${fluxdir}/plank-input-shape.py" &
+    fi
+fi
+
+if [ -x /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 ]; then
+    /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+fi
+
+if have dunst; then
+    dunst -config "${HOME}/.config/dunst/fluxbox-music.conf" &
+fi
+# Tray applets must start after tint2 owns _NET_SYSTEM_TRAY.
+# They also need a restart if tint2 itself is restarted later.
+start_tray_applets() {
+    if have pasystray; then
+        pasystray &
+    fi
+    if have nm-applet; then
+        nm-applet &
+    fi
+}
+(sleep 0.6; start_tray_applets) &
+
+# feh before pcmanfm can lose the root pixmap; set it again once the desktop exists
+(sleep 0.8; set_wallpaper) &
+
+wait "$fbpid"

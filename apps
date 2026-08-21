@@ -1,0 +1,44 @@
+[app] (name=fbrun)
+  [Position] (WINCENTER) {0 0}
+  [Layer] {2}
+[end]
+
+[app] (class=Tint2)
+  [Layer] {4}
+  [Sticky] {yes}
+  [Hidden] {yes}
+  [Deco] {NONE}
+  [Close] {no}
+[end]
+
+[app] (class=Plank)
+  [Layer] {2}
+  [Sticky] {yes}
+  [Hidden] {yes}
+  [Deco] {NONE}
+  [Close] {no}
+[end]
+
+[app] (class=Pcmanfm) (@_NET_WM_WINDOW_TYPE=.*DESKTOP.*)
+  [Layer] {12}
+  [Sticky] {yes}
+  [Hidden] {yes}
+  [Deco] {NONE}
+  [Close] {no}
+[end]
+
+# Winamp-skin Audacious: three separate windows, no Fluxbox chrome.
+# Positions are restored by audacious-stack.py (transients otherwise land
+# on top of the player after a Fluxbox restart or resume).
+[app] (class=Audacious) (role=mainwindow)
+  [Deco] {NONE}
+  [Layer] {6}
+[end]
+[app] (class=Audacious) (role=equalizer)
+  [Deco] {NONE}
+  [Layer] {6}
+[end]
+[app] (class=Audacious) (role=playlist)
+  [Deco] {NONE}
+  [Layer] {6}
+[end]

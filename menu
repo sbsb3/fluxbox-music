@@ -1,0 +1,140 @@
+# Fluxbox music-production root menu (right-click desktop, Super+Space)
+# Icons are installed to ~/.fluxbox/pixmaps by install.sh
+
+[begin] (Music)
+[encoding] {UTF-8}
+
+      [exec] (SunVox) {sunvox} <~/.fluxbox/pixmaps/sunvox.png>
+      [exec] (Renoise) {renoise} <~/.fluxbox/pixmaps/renoise.png>
+      [exec] (Bitwig Studio) {bitwig-studio} <~/.fluxbox/pixmaps/bitwig.png>
+      [exec] (Max 9) {/home/sb/bin/max9.sh}
+      [separator]
+      [exec] (Carla) {carla} <~/.fluxbox/pixmaps/carla.png>
+      [exec] (qpwgraph) {qpwgraph} <~/.fluxbox/pixmaps/qpwgraph.png>
+      [exec] (Volume Control) {pavucontrol} <~/.fluxbox/pixmaps/pavucontrol.png>
+      [separator]
+      [exec] (Chromium) {chromium} <~/.fluxbox/pixmaps/chromium.png>
+      [exec] (Gajim) {gajim} <~/.fluxbox/pixmaps/gajim.png>
+      [exec] (Audacious) {audacious} <~/.fluxbox/pixmaps/audacious.png>
+
+[submenu] (DAWs)
+      [exec] (SunVox) {sunvox} <~/.fluxbox/pixmaps/sunvox.png>
+      [exec] (SunVox OpenGL) {sunvox_opengl} <~/.fluxbox/pixmaps/sunvox.png>
+      [exec] (Renoise) {renoise} <~/.fluxbox/pixmaps/renoise.png>
+      [exec] (Random Renoise Project) {/home/sb/scripts/renoise_random.sh} <~/.fluxbox/pixmaps/renoise.png>
+      [exec] (Bitwig Studio) {bitwig-studio} <~/.fluxbox/pixmaps/bitwig.png>
+      [exec] (Max 9) {/home/sb/bin/max9.sh}
+      [exec] (Hydrogen) {hydrogen} <~/.fluxbox/pixmaps/hydrogen.png>
+      [exec] (Audacity) {env GDK_BACKEND=x11 audacity} <~/.fluxbox/pixmaps/audacity.png>
+      [exec] (PlugData) {plugdata} <~/.fluxbox/pixmaps/plugdata.png>
+[end]
+
+[submenu] (Plugin hosts)
+      [exec] (Carla) {carla} <~/.fluxbox/pixmaps/carla.png>
+      [exec] (Carla Rack) {carla-rack} <~/.fluxbox/pixmaps/carla.png>
+      [exec] (Carla Patchbay) {carla-patchbay} <~/.fluxbox/pixmaps/carla.png>
+      [exec] (Carla Control) {carla-control} <~/.fluxbox/pixmaps/carla-control.png>
+      [exec] (Carla Settings) {carla-settings} <~/.fluxbox/pixmaps/carla.png>
+      [exec] (PlugData) {plugdata} <~/.fluxbox/pixmaps/plugdata.png>
+[submenu] (Open in Carla)
+      [exec] (Surge XT) {carla-single vst3 "/usr/lib/vst3/Surge XT.vst3"}
+      [exec] (Surge XT Effects) {carla-single vst3 "/usr/lib/vst3/Surge XT Effects.vst3"}
+      [exec] (Vaporizer2) {carla-single vst3 /usr/lib/vst3/VASTvaporizer2.vst3}
+      [exec] (Geonkick) {carla-single vst3 /usr/lib/vst3/Geonkick.vst3}
+      [exec] (Stochas) {carla-single vst3 /usr/lib/vst3/Stochas.vst3}
+      [exec] (Dragonfly Hall) {carla-single vst3 /usr/lib/vst3/DragonflyHallReverb.vst3}
+      [exec] (Dragonfly Room) {carla-single vst3 /usr/lib/vst3/DragonflyRoomReverb.vst3}
+      [exec] (Dragonfly Plate) {carla-single vst3 /usr/lib/vst3/DragonflyPlateReverb.vst3}
+      [exec] (OneTrick SIMIAN2) {carla-single vst3 "/usr/lib/vst3/OneTrick SIMIAN2.vst3"}
+      [exec] (OneTrick CRYPTID) {carla-single vst3 "/usr/lib/vst3/OneTrick CRYPTID.vst3"}
+      [exec] (OneTrick URCHIN) {carla-single vst3 "/usr/lib/vst3/OneTrick URCHIN.vst3"}
+      [exec] (LSP Plugins) {carla-single vst3 /usr/lib/vst3/lsp-plugins.vst3}
+      [exec] (BioTek 2) {carla-single vst3 "/home/sb/.vst3/BioTek 2.vst3"}
+      [exec] (Renoise Redux) {carla-single vst3 /home/sb/.vst3/renoise_redux.vst3}
+[end]
+[end]
+
+[submenu] (Synths and drums)
+      [exec] (ZynAddSubFX JACK) {zynaddsubfx -I jack -O jack} <~/.fluxbox/pixmaps/zynaddsubfx.png>
+      [exec] (ZynAddSubFX JACK multi) {zynaddsubfx -I jack -O jack-multi} <~/.fluxbox/pixmaps/zynaddsubfx.png>
+      [exec] (Hydrogen) {hydrogen} <~/.fluxbox/pixmaps/hydrogen.png>
+      [exec] (Geonkick in Carla) {carla-single vst3 /usr/lib/vst3/Geonkick.vst3} <~/.fluxbox/pixmaps/hydrogen.png>
+[end]
+
+[submenu] (Routing and audio)
+      [exec] (qpwgraph) {qpwgraph} <~/.fluxbox/pixmaps/qpwgraph.png>
+      [exec] (Carla Patchbay) {carla-patchbay} <~/.fluxbox/pixmaps/carla.png>
+      [exec] (QjackCtl) {qjackctl -platform xcb} <~/.fluxbox/pixmaps/qjackctl.png>
+      [exec] (Volume Control) {pavucontrol} <~/.fluxbox/pixmaps/pavucontrol.png>
+      [exec] (PipeWire status) {wezterm start -- pw-top}
+      [exec] (ALSA MIDI ports) {wezterm start -- aconnect -l}
+[end]
+
+[submenu] (Players)
+      [exec] (Audacious) {audacious} <~/.fluxbox/pixmaps/audacious.png>
+      [exec] (DeaDBeeF) {deadbeef} <~/.fluxbox/pixmaps/deadbeef.png>
+      [exec] (foobar2000) {env WINEPREFIX=/home/sb/.wine wine "/home/sb/.wine/drive_c/Program Files (x86)/foobar2000/foobar2000.exe"}
+      [exec] (VLC) {vlc}
+      [exec] (mpv) {mpv --player-operation-mode=pseudo-gui}
+[end]
+
+[submenu] (Files)
+      [exec] (PCManFM) {pcmanfm --profile fluxbox-music}
+      [exec] (Thunar) {thunar}
+      [exec] (Music) {pcmanfm --profile fluxbox-music ~/Music}
+      [exec] (samples) {pcmanfm --profile fluxbox-music ~/samples}
+      [exec] (Projects) {pcmanfm --profile fluxbox-music ~/Projects}
+      [exec] (SunVox projects) {pcmanfm --profile fluxbox-music /run/media/sb/Projects/sunvox}
+      [exec] (Renoise projects) {pcmanfm --profile fluxbox-music /run/media/sb/Projects/Renoise}
+      [exec] (Renoise Linux projects) {pcmanfm --profile fluxbox-music /run/media/sb/Projects/Renoiselinux}
+      [exec] (Bitwig Studio) {pcmanfm --profile fluxbox-music ~/Bitwig\ Studio}
+      [separator]
+      [exec] (VST3 ~/.vst3) {pcmanfm --profile fluxbox-music ~/.vst3}
+      [exec] (VST3 ~/vst3) {pcmanfm --profile fluxbox-music ~/vst3}
+      [exec] (VST3 /usr/lib/vst3) {pcmanfm --profile fluxbox-music /usr/lib/vst3}
+      [exec] (CLAP ~/.clap) {pcmanfm --profile fluxbox-music ~/.clap}
+      [exec] (LV2 /usr/lib/lv2) {pcmanfm --profile fluxbox-music /usr/lib/lv2}
+[end]
+
+[submenu] (Terminal)
+      [exec] (WezTerm) {wezterm}
+      [exec] (Alacritty) {alacritty}
+      [exec] (Xfce Terminal) {xfce4-terminal}
+[end]
+
+[submenu] (Internet)
+      [exec] (Chromium) {chromium} <~/.fluxbox/pixmaps/chromium.png>
+      [exec] (Gajim) {gajim} <~/.fluxbox/pixmaps/gajim.png>
+[end]
+
+[submenu] (Themes)
+      [exec] (GTK and icons…) {xfce4-appearance-settings}
+      [separator]
+      [stylesdir] (~/.fluxbox/styles)
+      [stylesdir] (/usr/share/fluxbox/styles)
+[end]
+
+[submenu] (Session)
+      [exec] (Run…) {fbrun}
+      [exec] (Screenshot) {scrot "$HOME/Pictures/%Y-%m-%d-%H%M%S.png"}
+      [exec] (Screenshot region) {scrot -s "$HOME/Pictures/%Y-%m-%d-%H%M%S.png"}
+      [exec] (Network) {nm-connection-editor}
+      [exec] (Bluetooth) {blueman-manager}
+      [exec] (Kill window) {xkill}
+      [separator]
+      [workspaces] (Workspaces)
+      [config] (Configure Fluxbox)
+[submenu] (Styles)
+      [stylesdir] (~/.fluxbox/styles)
+      [stylesdir] (/usr/share/fluxbox/styles)
+[end]
+      [reconfig] (Reload config)
+      [restart] (Restart Fluxbox)
+      [separator]
+      [exit] (Leave music session)
+      [separator]
+      [exec] (Suspend) {systemctl suspend}
+[end]
+
+[endencoding]
+[end]

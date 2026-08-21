@@ -1,0 +1,3 @@
+! Music session overlay: styles must not fight feh/pcmanfm for the wallpaper.
+background: none
+background.pixmap: none

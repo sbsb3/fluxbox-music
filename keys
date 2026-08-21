@@ -1,0 +1,94 @@
+# Fluxbox music-production keys
+# Super (Mod4) is the session modifier so Ctrl/Alt stay available to DAWs.
+# Function-key workspace binds from the Fluxbox defaults are removed on purpose
+# (Renoise, Bitwig, SunVox, and Max all use F-keys).
+
+# Desktop
+OnDesktop Mouse1 :HideMenus
+OnDesktop Mouse2 :WorkspaceMenu
+OnDesktop Mouse3 :RootMenu
+OnDesktop Mouse4 :PrevWorkspace
+OnDesktop Mouse5 :NextWorkspace
+
+OnToolbar Mouse4 :PrevWindow {static groups} (iconhidden=no)
+OnToolbar Mouse5 :NextWindow {static groups} (iconhidden=no)
+
+# Move / resize without stealing DAW Ctrl bindings
+OnWindow Mod1 Mouse1 :MacroCmd {Raise} {Focus} {StartMoving}
+OnWindowBorder Move1 :StartMoving
+OnWindow Mod1 Mouse3 :MacroCmd {Raise} {Focus} {StartResizing NearestCorner}
+OnLeftGrip Move1 :StartResizing bottomleft
+OnRightGrip Move1 :StartResizing bottomright
+OnWindow Mod1 Mouse2 :Lower
+
+OnTitlebar Control Mouse1 :StartTabbing
+# Double-click the title (or tab) to maximize, not shade/roll-up
+OnTitlebar Double Mouse1 :Maximize
+OnTab Double Mouse1 :Maximize
+OnTitlebar Mouse1 :MacroCmd {Raise} {Focus} {ActivateTab}
+OnTitlebar Move1 :StartMoving
+OnTitlebar Mouse2 :Lower
+# Right-click the title, tab, or border for the window menu (includes Close)
+OnTitlebar Mouse3 :WindowMenu
+OnTab Mouse3 :WindowMenu
+OnWindowBorder Mouse3 :WindowMenu
+OnLeftGrip Mouse3 :WindowMenu
+OnRightGrip Mouse3 :WindowMenu
+
+# Window cycling (Alt-Tab is standard and rarely claimed as a DAW shortcut)
+Mod1 Tab :NextWindow {groups} (workspace=[current])
+Mod1 Shift Tab :PrevWindow {groups} (workspace=[current])
+
+# Workspaces (Internet, Audio)
+Mod4 1 :Workspace 1
+Mod4 2 :Workspace 2
+Mod4 Shift 1 :TakeToWorkspace 1
+Mod4 Shift 2 :TakeToWorkspace 2
+Mod4 Tab :NextWorkspace
+Mod4 Shift Tab :PrevWorkspace
+Control Mod1 Left :PrevWorkspace
+Control Mod1 Right :NextWorkspace
+Mod4 Left :SendToPrevWorkspace
+Mod4 Right :SendToNextWorkspace
+
+# Session launchers (Super + key)
+Mod4 Return :Exec alacritty
+Mod4 space :RootMenu
+Mod4 d :Exec fbrun
+Mod4 e :Exec pcmanfm --profile fluxbox-music
+Mod4 s :Exec sunvox
+Mod4 r :Exec renoise
+Mod4 b :Exec bitwig-studio
+Mod4 c :Exec carla
+Mod4 g :Exec qpwgraph
+Mod4 v :Exec pavucontrol
+Mod4 h :Exec hydrogen
+Mod4 m :Exec /home/sb/bin/max9.sh
+Mod4 p :Exec plugdata
+Mod4 z :Exec zynaddsubfx -I jack -O jack
+Mod4 w :Exec pcmanfm --profile fluxbox-music ~/Music
+Mod4 F4 :Close
+Mod4 F9 :Minimize
+Mod4 F10 :Maximize
+Mod4 F11 :Fullscreen
+
+# Window ops that do not eat DAW F-keys
+Mod1 F2 :Exec fbrun
+Mod1 F4 :Close
+Mod1 F9 :Minimize
+Mod1 F10 :Maximize
+Mod1 F11 :Fullscreen
+Mod1 space :WindowMenu
+Mod4 Shift Escape :Kill
+
+# PipeWire volume (do not bind raw keycodes — those steal real keys)
+XF86AudioRaiseVolume :Exec wpctl set-volume -l 1.25 @DEFAULT_AUDIO_SINK@ 5%+
+XF86AudioLowerVolume :Exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+XF86AudioMute :Exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+
+Print :Exec scrot "$HOME/Pictures/%Y-%m-%d-%H%M%S.png"
+Mod4 Print :Exec scrot -s "$HOME/Pictures/%Y-%m-%d-%H%M%S.png"
+
+# Reload / leave
+Mod4 Shift r :Reconfigure
+Control Mod1 Delete :Exit

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Music menu
+Comment=Fluxbox root menu
+Exec=fluxbox-remote RootMenu
+Icon=audio-headphones
+Terminal=false
+Categories=AudioVideo;Audio;
+OnlyShowIn=Fluxbox;
+StartupNotify=false
