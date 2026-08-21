@@ -194,6 +194,7 @@ class Grabber:
         self.last_usr1 = 0.0
         self.usr1_misses = {}
         self.chronic_missing = set()
+        self.chronic_classes = set()
         self.started = GLib.get_monotonic_time() / 1e6
         self.menu = None
 
@@ -295,16 +296,27 @@ class Grabber:
             return
         live_ids = set()
         missing_ids = set()
+        missing_classes = {}
         for win in iter_clients(self.d, self.atoms["list"]):
             live_ids.add(win.id)
             if not self.is_panel_task(win):
                 continue
             if win.id in self.task_geom or win.id in self.chronic_missing:
                 continue
+            tokens = class_tokens(win)
+            if self.chronic_classes & set(tokens):
+                # A previous window of this same app was already confirmed
+                # unresolvable -- a relaunch (new window id, new PID) gets
+                # no free strikes; restarting tint2 was never going to fix
+                # a property Plank keeps overwriting regardless of tint2's
+                # state.
+                self.chronic_missing.add(win.id)
+                continue
             g = read_icon_geom(win, self.atoms["geom"])
             ok = g is not None and g[3] >= MIN_TASK_H and intersects(*g, *panel)
             if not ok:
                 missing_ids.add(win.id)
+                missing_classes[win.id] = tokens
         # Drop bookkeeping for windows that closed, or that got resolved
         # (cached, or restored) without needing another kick.
         for wid in list(self.usr1_misses):
@@ -318,14 +330,16 @@ class Grabber:
         # task and Plank-pinned can never get a panel-intersecting geometry
         # cached -- restarting tint2 does not fix that. Once a window has
         # cost a couple of restarts without resolving, stop kicking tint2 on
-        # its account so a permanently-unresolvable window can't force a
-        # panel restart (and the taskbar-desktop-index race that comes with
-        # it) every USR1_COOLDOWN seconds forever.
+        # its account (and any future window of the same app -- see above)
+        # so a permanently-unresolvable app can't force a panel restart (and
+        # the taskbar-desktop-index race that comes with it) every
+        # USR1_COOLDOWN seconds forever.
         for wid in missing_ids:
             strikes = self.usr1_misses.get(wid, 0) + 1
             self.usr1_misses[wid] = strikes
             if strikes > USR1_MAX_STRIKES:
                 self.chronic_missing.add(wid)
+                self.chronic_classes.update(missing_classes.get(wid, ()))
         if missing_ids <= self.chronic_missing:
             return
         pid = tint2_pid(self.panel, self.atoms["pid"])
