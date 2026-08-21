@@ -29,6 +29,10 @@ ALL_DESKTOPS = 0xFFFFFFFF
 USR1_COOLDOWN = 15.0
 USR1_MAX_STRIKES = 2
 MIN_TASK_H = 32
+# fullscreen-panel.py touches this while it has tint2 unmapped for a
+# fullscreen window -- every task's icon geometry looks "missing" then, which
+# would otherwise read as exactly the fault this self-heal exists to catch.
+FULLSCREEN_HIDDEN_FLAG = os.path.expanduser("~/.fluxbox/panel-hidden")
 
 
 def intern(d, name):
@@ -286,6 +290,8 @@ class Grabber:
     def maybe_usr1(self):
         if self.panel is None:
             return
+        if os.path.exists(FULLSCREEN_HIDDEN_FLAG):
+            return
         now = GLib.get_monotonic_time() / 1e6
         if now - self.started < 1.0:
             return
@@ -445,19 +451,30 @@ class Grabber:
                 except (error.BadWindow, error.BadDrawable):
                     pass
             return
+        # GrabModeSync freezes *all* pointer delivery until AllowEvents.
+        # Always release the sync grab, even if hit-testing throws.
         if ev.type != X.ButtonPress or getattr(ev, "detail", None) != X.Button3:
             return
-        if ev.window.id not in self.grabbed_ids:
-            self.allow(X.ReplayPointer)
-            return
-        px = int(getattr(ev, "root_x", 0))
-        py = int(getattr(ev, "root_y", 0))
-        win = self.task_at_pointer(px, py)
-        if win is None:
-            self.allow(X.ReplayPointer)
-            return
-        self.allow(X.AsyncPointer)
-        self.popup(win, getattr(ev, "time", 0))
+        mode = X.ReplayPointer
+        win = None
+        try:
+            if ev.window.id not in self.grabbed_ids:
+                return
+            px = int(getattr(ev, "root_x", 0))
+            py = int(getattr(ev, "root_y", 0))
+            win = self.task_at_pointer(px, py)
+            if win is not None:
+                mode = X.AsyncPointer
+        except (error.BadWindow, error.BadDrawable, error.BadAccess):
+            mode = X.ReplayPointer
+            win = None
+        finally:
+            self.allow(mode)
+        if win is not None:
+            try:
+                self.popup(win, getattr(ev, "time", 0))
+            except Exception:
+                pass
 
 
 def main(argv):
@@ -479,10 +496,18 @@ def main(argv):
         return True
 
     def refresh():
+        # Drain first: a pending sync-grab ButtonPress freezes the pointer
+        # for every client until AllowEvents runs.
+        drain()
         g.grab_panel()
         g.watch_clients()
         g.maybe_usr1()
         drain()
+        return True
+
+    def release_sync_grab():
+        # Safety valve if a ButtonPress was dropped without AllowEvents.
+        g.allow(X.AsyncPointer)
         return True
 
     refresh()
@@ -493,6 +518,7 @@ def main(argv):
     if fd is not None:
         GLib.io_add_watch(fd, GLib.IO_IN, drain)
     GLib.timeout_add(50, drain)
+    GLib.timeout_add(500, release_sync_grab)
     GLib.timeout_add(int(POLL_TINT2 * 1000), refresh)
     Gtk.main()
     return 0

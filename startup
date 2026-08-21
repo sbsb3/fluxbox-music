@@ -144,8 +144,18 @@ fi
 if have pcmanfm; then
     pcmanfm --desktop --profile fluxbox-music &
 fi
+# Supervised: this watcher owns _GTK_WORKAREAS for the whole session, so if
+# it ever exits (a stray Xlib error while probing a dying client used to do
+# it) the per-monitor workareas freeze and desktop icons drift back under the
+# panel. Keep its stderr instead of dropping it, so a repeat is diagnosable.
 if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${fluxdir}/desktop-heads.py" ]; then
-    "${fluxdir}/desktop-heads.py" &
+    (
+        while :; do
+            "${fluxdir}/desktop-heads.py" >>/tmp/desktop-heads.log 2>&1
+            echo "desktop-heads: exited ($?), restarting" >>/tmp/desktop-heads.log
+            sleep 2
+        done
+    ) &
 fi
 if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${fluxdir}/audacious-stack.py" ]; then
     "${fluxdir}/audacious-stack.py" &
@@ -188,6 +198,13 @@ if have plank; then
     if python3 -c "import Xlib" >/dev/null 2>&1; then
         "${fluxdir}/plank-input-shape.py" &
     fi
+fi
+
+# Fullscreen apps (Steam games in particular) sit in Normal layer even when
+# fullscreen, so tint2/Plank's always-on-top docks keep drawing over them.
+# Unmap both while a fullscreen window is up, remap once it's gone.
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${fluxdir}/fullscreen-panel.py" ]; then
+    "${fluxdir}/fullscreen-panel.py" &
 fi
 
 if [ -x /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 ]; then
