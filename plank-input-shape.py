@@ -9,6 +9,14 @@ Clicks in the bottom band of the screen are swallowed and never reach the DAW
 underneath, so e.g. Renoise device sliders there cannot be dragged.
 
 Copy the client's input shape onto the frame whenever Plank changes it.
+
+Plank also keeps a second, tiny (<= STRAY_MAX px) window of its own class
+alive outside the dock/tooltip pair -- seen live sitting mid-screen at a
+fixed position, sticky and always-on-top like the dock, rendering a stray
+cursor-glyph square that survives window/workspace changes and a picom
+restart. Whatever Plank uses it for internally, it has no business being
+visible, so relocate any such window off-screen wherever this script
+already looks at Plank's windows.
 """
 import sys
 import time
@@ -17,6 +25,9 @@ from Xlib import X, display, error
 from Xlib.ext import shape
 
 DOCK = "_NET_WM_WINDOW_TYPE_DOCK"
+STRAY_MAX = 16      # px; the dock and its tooltip are both much bigger
+STRAY_OFFSET = (-100, -100)
+STRAY_RECHECK = 2.0  # seconds between sweeps for a stray window
 
 
 def is_plank_dock(d, win, atom_type, atom_dock):
@@ -67,6 +78,52 @@ def sync(client, frame):
     )
 
 
+def tree_windows(top, maxdepth=4):
+    """BFS over top's descendants, depth-limited.
+
+    Fluxbox reparents windows inconsistently (observed live: the same class
+    of window turns up as a direct child of root sometimes and nested inside
+    a frame other times), so a stray window search can't assume a fixed
+    depth.
+    """
+    level = [top]
+    for _ in range(maxdepth):
+        nxt = []
+        for win in level:
+            try:
+                nxt.extend(win.query_tree().children)
+            except (error.BadWindow, error.BadDrawable):
+                continue
+        if not nxt:
+            break
+        yield from nxt
+        level = nxt
+
+
+def sweep_strays(root):
+    """Relocate any stray tiny Plank window off-screen (see module docstring)."""
+    for win in tree_windows(root):
+        try:
+            cls = win.get_wm_class()
+        except (error.BadWindow, error.BadDrawable):
+            continue
+        if not cls or "plank" not in [c.lower() for c in cls]:
+            continue
+        try:
+            g = win.get_geometry()
+        except (error.BadWindow, error.BadDrawable):
+            continue
+        if g.width > STRAY_MAX or g.height > STRAY_MAX:
+            continue  # the dock itself, or its tooltip
+        try:
+            t = root.translate_coords(win, 0, 0)
+            if (t.x, t.y) == STRAY_OFFSET:
+                continue  # already relocated
+            win.configure(x=STRAY_OFFSET[0], y=STRAY_OFFSET[1])
+        except (error.BadWindow, error.BadDrawable):
+            continue
+
+
 def main():
     d = display.Display()
     if not d.has_extension("SHAPE"):
@@ -75,11 +132,19 @@ def main():
     atom_type = d.intern_atom("_NET_WM_WINDOW_TYPE")
     atom_dock = d.intern_atom(DOCK)
     shape_notify = d.extension_event.ShapeNotify
+    root = d.screen().root
 
     client = None
     frame = None
+    next_sweep = 0.0
 
     while True:
+        now = time.monotonic()
+        if now >= next_sweep:
+            next_sweep = now + STRAY_RECHECK
+            sweep_strays(root)
+            d.sync()
+
         if client is None:
             client = find_dock(d, atom_type, atom_dock)
             if client is None:

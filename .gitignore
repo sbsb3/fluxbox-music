@@ -3,6 +3,7 @@ fbrun_history
 lastwallpaper
 lastworkspace
 panel-profile
+panel-hidden
 *.bak
 *~
 __pycache__/
