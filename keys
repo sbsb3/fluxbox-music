@@ -28,12 +28,15 @@ OnTab Double Mouse1 :Maximize
 OnTitlebar Mouse1 :MacroCmd {Raise} {Focus} {ActivateTab}
 OnTitlebar Move1 :StartMoving
 OnTitlebar Mouse2 :Lower
-# Right-click the title, tab, or border for the window menu (includes Close)
+# Right-click the title, tab, or border for the window menu (includes Send To)
 OnTitlebar Mouse3 :WindowMenu
 OnTab Mouse3 :WindowMenu
 OnWindowBorder Mouse3 :WindowMenu
 OnLeftGrip Mouse3 :WindowMenu
 OnRightGrip Mouse3 :WindowMenu
+# Titlebar-less DAWs (Renoise, Bitwig, Max): Super+right-click is Send To.
+# Plain right-click stays with the app. Panel task buttons have their own menu.
+OnWindow Mod4 Mouse3 :WindowMenu
 
 # Window cycling (Alt-Tab is standard and rarely claimed as a DAW shortcut)
 Mod1 Tab :NextWindow {groups} (workspace=[current])

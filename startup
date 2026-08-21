@@ -149,10 +149,19 @@ fi
 if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${fluxdir}/audacious-stack.py" ]; then
     "${fluxdir}/audacious-stack.py" &
 fi
+# SunVox / Bitwig do not publish _NET_WM_ICON; stamp the desktop launcher PNG
+# onto those windows so tint2 tasks are not the generic placeholder.
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${fluxdir}/window-icons.py" ]; then
+    "${fluxdir}/window-icons.py" &
+fi
 
 if have tint2; then
     tint2 -c "${HOME}/.config/tint2/fluxbox-music.tint2rc" &
     place_tint2 &
+fi
+# Right-click on tint2 task buttons: Send To / iconify / maximize / close.
+if python3 -c "import Xlib, gi" >/dev/null 2>&1 && [ -x "${fluxdir}/task-menu.py" ]; then
+    "${fluxdir}/task-menu.py" &
 fi
 
 # Named dock, not the default "dock1" used by XFCE.
