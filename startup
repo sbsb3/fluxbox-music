@@ -121,7 +121,8 @@ set_wallpaper
 # WM first, then compositor, then desktop / panel / tray.
 fluxbox -log "${fluxdir}/log" &
 fbpid=$!
-trap 'kill "$fbpid" 2>/dev/null; wait "$fbpid" 2>/dev/null' EXIT
+trap 'kill "$fbpid" 2>/dev/null; wait "$fbpid" 2>/dev/null
+      have systemctl && systemctl --user unmask xfce4-notifyd.service >/dev/null 2>&1' EXIT
 sleep 0.5
 
 if have picom; then
@@ -194,6 +195,18 @@ if [ -x /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 ]; then
 fi
 
 if have dunst; then
+    # xfce4-notifyd also claims org.freedesktop.Notifications. Its user-unit
+    # drop-ins (Restart=always, RestartSec=2, from the XFCE session) mean it
+    # keeps losing that race to dunst and respawning every few seconds --
+    # each respawn briefly opens/closes a root-level window, which churns
+    # _NET_CLIENT_LIST/_NET_CLIENT_LIST_STACKING and can knock tint2's
+    # per-desktop taskbar into showing the wrong workspace's task buttons.
+    # Mask it only for this session; the EXIT trap below unmasks it so a
+    # later XFCE login keeps its normal auto-restart behavior.
+    if have systemctl; then
+        systemctl --user mask xfce4-notifyd.service >/dev/null 2>&1 || true
+        systemctl --user stop xfce4-notifyd.service >/dev/null 2>&1 || true
+    fi
     dunst -config "${HOME}/.config/dunst/fluxbox-music.conf" &
 fi
 # Tray applets must start after tint2 owns _NET_SYSTEM_TRAY.

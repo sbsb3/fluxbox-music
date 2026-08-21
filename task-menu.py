@@ -27,6 +27,7 @@ from Xlib import X, display, error
 POLL_TINT2 = 2.0
 ALL_DESKTOPS = 0xFFFFFFFF
 USR1_COOLDOWN = 15.0
+USR1_MAX_STRIKES = 2
 MIN_TASK_H = 32
 
 
@@ -191,6 +192,8 @@ class Grabber:
         self.task_geom = {}
         self.watching = set()
         self.last_usr1 = 0.0
+        self.usr1_misses = {}
+        self.chronic_missing = set()
         self.started = GLib.get_monotonic_time() / 1e6
         self.menu = None
 
@@ -290,21 +293,40 @@ class Grabber:
         panel = abs_geom(self.d, self.panel)
         if panel is None:
             return
-        missing = False
+        live_ids = set()
+        missing_ids = set()
         for win in iter_clients(self.d, self.atoms["list"]):
+            live_ids.add(win.id)
             if not self.is_panel_task(win):
                 continue
-            if win.id in self.task_geom:
+            if win.id in self.task_geom or win.id in self.chronic_missing:
                 continue
             g = read_icon_geom(win, self.atoms["geom"])
-            if g is None:
-                missing = True
-                break
-            x, y, w, h = g
-            if h < MIN_TASK_H or not intersects(x, y, w, h, *panel):
-                missing = True
-                break
-        if not missing:
+            ok = g is not None and g[3] >= MIN_TASK_H and intersects(*g, *panel)
+            if not ok:
+                missing_ids.add(win.id)
+        # Drop bookkeeping for windows that closed, or that got resolved
+        # (cached, or restored) without needing another kick.
+        for wid in list(self.usr1_misses):
+            if wid not in missing_ids:
+                del self.usr1_misses[wid]
+        self.chronic_missing &= live_ids
+        if not missing_ids:
+            return
+        # Plank permanently overwrites _NET_WM_ICON_GEOMETRY with its own
+        # dock slot for apps pinned there, so a window that is both a tint2
+        # task and Plank-pinned can never get a panel-intersecting geometry
+        # cached -- restarting tint2 does not fix that. Once a window has
+        # cost a couple of restarts without resolving, stop kicking tint2 on
+        # its account so a permanently-unresolvable window can't force a
+        # panel restart (and the taskbar-desktop-index race that comes with
+        # it) every USR1_COOLDOWN seconds forever.
+        for wid in missing_ids:
+            strikes = self.usr1_misses.get(wid, 0) + 1
+            self.usr1_misses[wid] = strikes
+            if strikes > USR1_MAX_STRIKES:
+                self.chronic_missing.add(wid)
+        if missing_ids <= self.chronic_missing:
             return
         pid = tint2_pid(self.panel, self.atoms["pid"])
         if not pid:
