@@ -21,7 +21,7 @@ session.screen0.slit.placement:	BottomRight
 session.screen0.slit.autoHide:	true
 session.screen0.slit.onhead:	0
 session.screen0.slit.autoRaise:	false
-session.screen0.struts.1:	0, 0, 56, 0
+session.screen0.struts.1:	0, 0, 30, 0
 session.screen0.struts.2:	0, 0, 0, 0
 session.screen0.struts.3:	0, 0, 0, 0
 session.screen0.clientMenu.usePixmap:	true

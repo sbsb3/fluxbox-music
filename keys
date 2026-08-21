@@ -55,7 +55,7 @@ Mod4 Left :SendToPrevWorkspace
 Mod4 Right :SendToNextWorkspace
 
 # Session launchers (Super + key)
-Mod4 Return :Exec alacritty
+Mod4 Return :Exec wezterm
 Mod4 space :RootMenu
 Mod4 d :Exec fbrun
 Mod4 e :Exec pcmanfm --profile fluxbox-music

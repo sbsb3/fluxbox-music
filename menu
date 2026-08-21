@@ -114,6 +114,12 @@
       [stylesdir] (/usr/share/fluxbox/styles)
 [end]
 
+[submenu] (Panel)
+      [exec] (Normal (56px)) {~/.fluxbox/panel-size.sh normal}
+      [exec] (Compact (30px)) {~/.fluxbox/panel-size.sh compact}
+      [exec] (Toggle size) {~/.fluxbox/panel-size.sh toggle}
+[end]
+
 [submenu] (Session)
       [exec] (Run…) {fbrun}
       [exec] (Screenshot) {scrot "$HOME/Pictures/%Y-%m-%d-%H%M%S.png"}
@@ -132,8 +138,6 @@
       [restart] (Restart Fluxbox)
       [separator]
       [exit] (Leave music session)
-      [separator]
-      [exec] (Suspend) {systemctl suspend}
 [end]
 
 [endencoding]
