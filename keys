@@ -84,10 +84,11 @@ Mod1 F11 :Fullscreen
 Mod1 space :WindowMenu
 Mod4 Shift Escape :Kill
 
-# PipeWire volume (do not bind raw keycodes — those steal real keys)
-XF86AudioRaiseVolume :Exec wpctl set-volume -l 1.25 @DEFAULT_AUDIO_SINK@ 5%+
-XF86AudioLowerVolume :Exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
-XF86AudioMute :Exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+# Audacious volume via audtool (same as XFCE: ~/.local/bin/audacious-vol)
+# Do not bind raw keycodes — those steal real keys.
+XF86AudioRaiseVolume :Exec /home/sb/.local/bin/audacious-vol +
+XF86AudioLowerVolume :Exec /home/sb/.local/bin/audacious-vol -
+XF86AudioMute :Exec /home/sb/.local/bin/audacious-vol mute
 
 Print :Exec scrot "$HOME/Pictures/%Y-%m-%d-%H%M%S.png"
 Mod4 Print :Exec scrot -s "$HOME/Pictures/%Y-%m-%d-%H%M%S.png"
