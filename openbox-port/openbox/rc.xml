@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Openbox port of ~/.fluxbox for the music-production session.
+  Ported from: ~/.fluxbox/keys, ~/.fluxbox/apps, ~/.fluxbox/init.
+  See ~/.fluxbox/openbox-port-plan.md for the gap numbers referenced below,
+  and openbox-port/PORT-NOTES.md for the full settings-dropped inventory.
+
+  Super (Mod4/"W") is the session modifier so Ctrl/Alt stay available to DAWs.
+  Function-key workspace binds from stock defaults are omitted on purpose
+  (Renoise, Bitwig, SunVox, and Max all use F-keys).
+-->
+<!-- Namespace intentionally left at 3.4/rc: that is what this system's
+     installed Openbox 3.6.1 ships in /etc/xdg/openbox/rc.xml, the URI has
+     not changed since. -->
+<openbox_config xmlns="http://openbox.org/3.4/rc"
+		xmlns:xi="http://www.w3.org/2001/XInclude">
+
+<resistance>
+  <!-- init: session.screen0.edgeSnapThreshold: 8 -->
+  <strength>8</strength>
+  <screen_edge_strength>8</screen_edge_strength>
+</resistance>
+
+<focus>
+  <!-- init: focusNewWindows true -->
+  <focusNew>yes</focusNew>
+  <!-- init: focusModel ClickFocus (i.e. not follow-mouse) -->
+  <followMouse>no</followMouse>
+  <focusLast>yes</focusLast>
+  <underMouse>no</underMouse>
+  <raiseOnFocus>no</raiseOnFocus>
+</focus>
+
+<placement>
+  <!-- init: windowPlacement RowSmartPlacement. Openbox has no row/col-direction
+       knob for Smart placement (rowPlacementDirection/colPlacementDirection
+       dropped, no equivalent) - Smart + top-left start is the closest match. -->
+  <policy>Smart</policy>
+  <center>no</center>
+  <monitor>Primary</monitor>
+  <primaryMonitor>1</primaryMonitor>
+</placement>
+
+<theme>
+  <name>Clearlooks</name>
+  <titleLayout>NLIMC</titleLayout>
+  <keepBorder>yes</keepBorder>
+  <animateIconify>yes</animateIconify>
+</theme>
+
+<desktops>
+  <!-- init: session.screen0.workspaces 2 / workspaceNames Internet,Audio -->
+  <number>2</number>
+  <firstdesk>1</firstdesk>
+  <names>
+    <name>Internet</name>
+    <name>Audio</name>
+  </names>
+  <popupTime>875</popupTime>
+</desktops>
+
+<resize>
+  <!-- init: opaqueResize false -> Fluxbox showed an outline, not live content -->
+  <drawContents>no</drawContents>
+  <popupShow>Nonpixel</popupShow>
+  <popupPosition>Center</popupPosition>
+</resize>
+
+<margins>
+  <top>0</top>
+  <bottom>0</bottom>
+  <left>0</left>
+  <right>0</right>
+</margins>
+
+<dock>
+  <!-- Unused: tint2/Plank are ordinary top-level dock windows, not a
+       Fluxbox-slit-style Openbox dock app. Left at stock defaults. -->
+  <position>TopLeft</position>
+  <floatingX>0</floatingX>
+  <floatingY>0</floatingY>
+  <noStrut>no</noStrut>
+  <stacking>Above</stacking>
+  <direction>Vertical</direction>
+  <autoHide>no</autoHide>
+  <hideDelay>300</hideDelay>
+  <showDelay>300</showDelay>
+  <moveButton>Middle</moveButton>
+</dock>
+
+<keyboard>
+  <chainQuitKey>C-g</chainQuitKey>
+
+  <!-- Workspaces (Internet, Audio) -->
+  <keybind key="W-1"><action name="GoToDesktop"><to>1</to></action></keybind>
+  <keybind key="W-2"><action name="GoToDesktop"><to>2</to></action></keybind>
+  <keybind key="W-S-1"><action name="SendToDesktop"><to>1</to></action></keybind>
+  <keybind key="W-S-2"><action name="SendToDesktop"><to>2</to></action></keybind>
+  <keybind key="W-Tab"><action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action></keybind>
+  <keybind key="W-S-Tab"><action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action></keybind>
+  <keybind key="C-A-Left"><action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action></keybind>
+  <keybind key="C-A-Right"><action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action></keybind>
+  <keybind key="W-Left"><action name="SendToDesktop"><to>previous</to><wrap>yes</wrap></action></keybind>
+  <keybind key="W-Right"><action name="SendToDesktop"><to>next</to><wrap>yes</wrap></action></keybind>
+
+  <!-- Window cycling (Alt-Tab is standard and rarely claimed as a DAW shortcut).
+       Plain A-Tab/A-S-Tab already restrict to the current desktop, matching
+       Fluxbox's {groups} (workspace=[current]) filter. -->
+  <keybind key="A-Tab">
+    <action name="NextWindow">
+      <finalactions>
+        <action name="Focus"/><action name="Raise"/><action name="Unshade"/>
+      </finalactions>
+    </action>
+  </keybind>
+  <keybind key="A-S-Tab">
+    <action name="PreviousWindow">
+      <finalactions>
+        <action name="Focus"/><action name="Raise"/><action name="Unshade"/>
+      </finalactions>
+    </action>
+  </keybind>
+
+  <!-- Session launchers (Super + key) -->
+  <keybind key="W-Return"><action name="Execute"><command>wezterm</command></action></keybind>
+  <keybind key="W-space"><action name="ShowMenu"><menu>root-menu</menu></action></keybind>
+  <!-- gap #3: fbrun has no Openbox equivalent; replaced with rofi's run dialog.
+       Both of the original fbrun binds (Mod4 d and Mod1 F2) are replaced. -->
+  <keybind key="W-d"><action name="Execute"><command>rofi -show run</command></action></keybind>
+  <keybind key="W-e"><action name="Execute"><command>pcmanfm --profile fluxbox-music</command></action></keybind>
+  <keybind key="W-s"><action name="Execute"><command>sunvox</command></action></keybind>
+  <keybind key="W-r"><action name="Execute"><command>renoise</command></action></keybind>
+  <keybind key="W-b"><action name="Execute"><command>bitwig-studio</command></action></keybind>
+  <keybind key="W-c"><action name="Execute"><command>carla</command></action></keybind>
+  <keybind key="W-g"><action name="Execute"><command>qpwgraph</command></action></keybind>
+  <keybind key="W-v"><action name="Execute"><command>pavucontrol</command></action></keybind>
+  <keybind key="W-h"><action name="Execute"><command>hydrogen</command></action></keybind>
+  <keybind key="W-m"><action name="Execute"><command>/home/sb/bin/max9.sh</command></action></keybind>
+  <keybind key="W-p"><action name="Execute"><command>plugdata</command></action></keybind>
+  <keybind key="W-z"><action name="Execute"><command>zynaddsubfx -I jack -O jack</command></action></keybind>
+  <keybind key="W-w"><action name="Execute"><command>pcmanfm --profile fluxbox-music /home/sb/Music</command></action></keybind>
+  <keybind key="W-F4"><action name="Close"/></keybind>
+  <keybind key="W-F9"><action name="Iconify"/></keybind>
+  <keybind key="W-F10"><action name="ToggleMaximize"/></keybind>
+  <keybind key="W-F11"><action name="ToggleFullscreen"/></keybind>
+
+  <!-- Window ops that do not eat DAW F-keys -->
+  <keybind key="A-F2"><action name="Execute"><command>rofi -show run</command></action></keybind>
+  <keybind key="A-F4"><action name="Close"/></keybind>
+  <keybind key="A-F9"><action name="Iconify"/></keybind>
+  <keybind key="A-F10"><action name="ToggleMaximize"/></keybind>
+  <keybind key="A-F11"><action name="ToggleFullscreen"/></keybind>
+  <keybind key="A-space"><action name="ShowMenu"><menu>client-menu</menu></action></keybind>
+  <keybind key="W-S-Escape"><action name="Kill"/></keybind>
+
+  <!-- Audacious volume via audtool (same as XFCE: ~/.local/bin/audacious-vol).
+       Do not bind raw keycodes - those steal real keys. -->
+  <keybind key="XF86AudioRaiseVolume"><action name="Execute"><command>/home/sb/.local/bin/audacious-vol +</command></action></keybind>
+  <keybind key="XF86AudioLowerVolume"><action name="Execute"><command>/home/sb/.local/bin/audacious-vol -</command></action></keybind>
+  <keybind key="XF86AudioMute"><action name="Execute"><command>/home/sb/.local/bin/audacious-vol mute</command></action></keybind>
+
+  <keybind key="Print"><action name="Execute"><command>scrot "/home/sb/Pictures/%Y-%m-%d-%H%M%S.png"</command></action></keybind>
+  <keybind key="W-Print"><action name="Execute"><command>scrot -s "/home/sb/Pictures/%Y-%m-%d-%H%M%S.png"</command></action></keybind>
+
+  <!-- Reload / leave -->
+  <keybind key="W-S-r"><action name="Execute"><command>openbox --reconfigure</command></action></keybind>
+  <keybind key="C-A-Delete"><action name="Exit"><prompt>no</prompt></action></keybind>
+
+  <!-- Dropped, no translation (gap #2): StartTabbing has no Openbox equivalent. -->
+</keyboard>
+
+<mouse>
+  <dragThreshold>1</dragThreshold>
+  <!-- init: doubleClickInterval 250 -->
+  <doubleClickTime>250</doubleClickTime>
+  <screenEdgeWarpTime>400</screenEdgeWarpTime>
+  <screenEdgeWarpMouse>false</screenEdgeWarpMouse>
+
+  <!-- OnDesktop in keys. Mouse1 :HideMenus needs no binding - Openbox already
+       dismisses open menus on an outside click. -->
+  <context name="Desktop">
+    <mousebind button="Right" action="Press"><action name="ShowMenu"><menu>root-menu</menu></action></mousebind>
+    <mousebind button="Middle" action="Press"><action name="ShowMenu"><menu>workspace-menu</menu></action></mousebind>
+    <mousebind button="Up" action="Click"><action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action></mousebind>
+    <mousebind button="Down" action="Click"><action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action></mousebind>
+  </context>
+
+  <!-- OnToolbar Mouse4/5 (Fluxbox's own toolbar) has no equivalent: tint2 is
+       the panel in this session, not fbtoolbar. Dropped, not a regression. -->
+
+  <!-- OnWindow Mod1 Mouse1/2/3 - move/resize/lower without stealing DAW Ctrl. -->
+  <context name="Frame">
+    <mousebind button="A-Left" action="Press"><action name="Raise"/><action name="Focus"/></mousebind>
+    <mousebind button="A-Left" action="Drag"><action name="Move"/></mousebind>
+    <mousebind button="A-Right" action="Press"><action name="Raise"/><action name="Focus"/></mousebind>
+    <mousebind button="A-Right" action="Drag"><action name="Resize"/></mousebind>
+    <mousebind button="A-Middle" action="Press"><action name="Lower"/><action name="FocusToBottom"/><action name="Unfocus"/></mousebind>
+    <!-- Titlebar-less DAWs (Renoise, Bitwig, Max): Super+right-click is Send To. -->
+    <mousebind button="W-Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
+  </context>
+
+  <context name="Titlebar">
+    <!-- Double-click the title to maximize, not shade/roll-up. -->
+    <mousebind button="Left" action="DoubleClick"><action name="ToggleMaximize"/></mousebind>
+    <mousebind button="Left" action="Drag"><action name="Move"/></mousebind>
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/><action name="Unshade"/></mousebind>
+    <mousebind button="Middle" action="Press"><action name="Lower"/><action name="FocusToBottom"/><action name="Unfocus"/></mousebind>
+    <!-- Right-click the title/border/grips for the window menu (has Send To). -->
+    <mousebind button="Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
+  </context>
+
+  <!-- OnWindowBorder Move1 :StartMoving - in this config the plain border
+       (not the bottom corners) drags to MOVE, matching the original keys
+       file's deliberate (non-default) choice. Right-click still opens the
+       window menu, same as the titlebar/grips. -->
+  <context name="Top Left Right Bottom TLCorner TRCorner">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/><action name="Unshade"/></mousebind>
+    <mousebind button="Left" action="Drag"><action name="Move"/></mousebind>
+    <mousebind button="Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
+  </context>
+
+  <!-- OnLeftGrip/OnRightGrip: the two bottom corners resize (Fluxbox only
+       names bottom-left/bottom-right as grips). -->
+  <context name="BLCorner">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/></mousebind>
+    <mousebind button="Left" action="Drag"><action name="Resize"><edge>bottomleft</edge></action></mousebind>
+    <mousebind button="Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
+  </context>
+  <context name="BRCorner">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/></mousebind>
+    <mousebind button="Left" action="Drag"><action name="Resize"><edge>bottomright</edge></action></mousebind>
+    <mousebind button="Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
+  </context>
+
+  <context name="Client">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/></mousebind>
+    <mousebind button="Middle" action="Press"><action name="Focus"/><action name="Raise"/></mousebind>
+    <mousebind button="Right" action="Press"><action name="Focus"/><action name="Raise"/></mousebind>
+  </context>
+
+  <context name="Icon">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/><action name="Unshade"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
+    <mousebind button="Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
+  </context>
+
+  <context name="AllDesktops">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/><action name="Unshade"/></mousebind>
+    <mousebind button="Left" action="Click"><action name="ToggleOmnipresent"/></mousebind>
+  </context>
+
+  <context name="Iconify">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/></mousebind>
+    <mousebind button="Left" action="Click"><action name="Iconify"/></mousebind>
+  </context>
+
+  <context name="Maximize">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/><action name="Unshade"/></mousebind>
+    <mousebind button="Left" action="Click"><action name="ToggleMaximize"/></mousebind>
+  </context>
+
+  <context name="Close">
+    <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/><action name="Unshade"/></mousebind>
+    <mousebind button="Left" action="Click"><action name="Close"/></mousebind>
+  </context>
+
+  <context name="Root">
+    <mousebind button="Right" action="Press"><action name="ShowMenu"><menu>root-menu</menu></action></mousebind>
+    <mousebind button="Middle" action="Press"><action name="ShowMenu"><menu>workspace-menu</menu></action></mousebind>
+  </context>
+
+  <context name="MoveResize">
+    <mousebind button="Up" action="Click"><action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action></mousebind>
+    <mousebind button="Down" action="Click"><action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action></mousebind>
+  </context>
+</mouse>
+
+<menu>
+  <file>menu.xml</file>
+  <hideDelay>200</hideDelay>
+  <middle>no</middle>
+  <!-- init: menuDelay 150 -->
+  <submenuShowDelay>150</submenuShowDelay>
+  <submenuHideDelay>400</submenuHideDelay>
+  <showIcons>yes</showIcons>
+  <manageDesktops>yes</manageDesktops>
+</menu>
+
+<applications>
+  <!-- gap #3: the fbrun [app] entry (WINCENTER position, Layer 2) is dropped;
+       rofi positions itself. -->
+
+  <!-- gap #1: Plank, tint2, Audacious -> above. Renoise/plugin server and the
+       pcmanfm desktop window keep Openbox's default 'normal' layer / no
+       layer override respectively (5 Fluxbox layers collapse to 3). -->
+  <application class="Tint2">
+    <layer>above</layer>
+    <decor>no</decor>
+    <skip_taskbar>yes</skip_taskbar>
+    <skip_pager>yes</skip_pager>
+    <desktop>all</desktop>
+  </application>
+
+  <application class="Plank">
+    <layer>above</layer>
+    <decor>no</decor>
+    <skip_taskbar>yes</skip_taskbar>
+    <skip_pager>yes</skip_pager>
+    <desktop>all</desktop>
+  </application>
+
+  <!-- type="desktop" replaces apps's raw @_NET_WM_WINDOW_TYPE=.*DESKTOP.*
+       match - Openbox exposes it as a first-class rule attribute. No
+       <layer> needed: the DESKTOP window type hint already sinks it. -->
+  <application class="Pcmanfm" type="desktop">
+    <decor>no</decor>
+    <skip_taskbar>yes</skip_taskbar>
+    <skip_pager>yes</skip_pager>
+    <desktop>all</desktop>
+  </application>
+
+  <!-- Renoise (and its sandboxed plugin UIs) stay on Normal - no rule needed,
+     that is Openbox's default layer. AboveDock (Fluxbox layer 2) was a
+     workaround for Plank's oversized Fluxbox frame covering the bottom of
+     maximized DAWs; plank-input-shape.py fixes the input shape properly (see
+     gap #7 / PORT-NOTES.md), so Renoise does not need to sit above the dock
+     (and therefore above every other window) here either.
+     Matched classes: Renoise, "Renoise Plugin Server". -->
+
+  <!-- Winamp-skin Audacious: three separate windows, no chrome.
+       Positions are restored by audacious-stack.py (transients otherwise
+       land on top of the player after a restart or resume). -->
+  <application class="Audacious" role="mainwindow">
+    <decor>no</decor>
+    <layer>above</layer>
+  </application>
+  <application class="Audacious" role="equalizer">
+    <decor>no</decor>
+    <layer>above</layer>
+  </application>
+  <application class="Audacious" role="playlist">
+    <decor>no</decor>
+    <layer>above</layer>
+  </application>
+</applications>
+
+</openbox_config>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Openbox port of ~/.fluxbox/menu and ~/.fluxbox/windowmenu.
+  Icons: referenced in place from ~/.fluxbox/pixmaps (not copied) - see
+  openbox-port/PORT-NOTES.md for why that directory is fine to leave there.
+-->
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+
+<!-- rc.xml's OnDesktop/Root Mouse2 (:WorkspaceMenu) has no built-in Openbox
+     generator (no [workspaces]-equivalent tag), so this is a small static
+     menu instead. Fine because desktop count/names are now static in
+     rc.xml's <desktops> rather than something users add/remove at runtime. -->
+<menu id="workspace-menu" label="Workspaces">
+  <item label="Internet"><action name="GoToDesktop"><to>1</to></action></item>
+  <item label="Audio"><action name="GoToDesktop"><to>2</to></action></item>
+</menu>
+
+<menu id="root-menu" label="Music">
+  <item label="SunVox" icon="/home/sb/.fluxbox/pixmaps/sunvox.png">
+    <action name="Execute"><command>sunvox</command></action>
+  </item>
+  <item label="Renoise" icon="/home/sb/.fluxbox/pixmaps/renoise.png">
+    <action name="Execute"><command>renoise</command></action>
+  </item>
+  <item label="Bitwig Studio" icon="/home/sb/.fluxbox/pixmaps/bitwig.png">
+    <action name="Execute"><command>bitwig-studio</command></action>
+  </item>
+  <item label="Max 9">
+    <action name="Execute"><command>/home/sb/bin/max9.sh</command></action>
+  </item>
+  <separator/>
+  <item label="Carla" icon="/home/sb/.fluxbox/pixmaps/carla.png">
+    <action name="Execute"><command>carla</command></action>
+  </item>
+  <item label="qpwgraph" icon="/home/sb/.fluxbox/pixmaps/qpwgraph.png">
+    <action name="Execute"><command>qpwgraph</command></action>
+  </item>
+  <item label="Volume Control" icon="/home/sb/.fluxbox/pixmaps/pavucontrol.png">
+    <action name="Execute"><command>pavucontrol</command></action>
+  </item>
+  <separator/>
+  <item label="Chromium" icon="/home/sb/.fluxbox/pixmaps/chromium.png">
+    <action name="Execute"><command>chromium</command></action>
+  </item>
+  <item label="Gajim" icon="/home/sb/.fluxbox/pixmaps/gajim.png">
+    <action name="Execute"><command>gajim</command></action>
+  </item>
+  <item label="Audacious" icon="/home/sb/.fluxbox/pixmaps/audacious.png">
+    <action name="Execute"><command>audacious</command></action>
+  </item>
+
+  <menu id="daws-menu" label="DAWs">
+    <item label="SunVox" icon="/home/sb/.fluxbox/pixmaps/sunvox.png"><action name="Execute"><command>sunvox</command></action></item>
+    <item label="SunVox OpenGL" icon="/home/sb/.fluxbox/pixmaps/sunvox.png"><action name="Execute"><command>sunvox_opengl</command></action></item>
+    <item label="Renoise" icon="/home/sb/.fluxbox/pixmaps/renoise.png"><action name="Execute"><command>renoise</command></action></item>
+    <item label="Random Renoise Project" icon="/home/sb/.fluxbox/pixmaps/renoise.png"><action name="Execute"><command>/home/sb/scripts/renoise_random.sh</command></action></item>
+    <item label="Bitwig Studio" icon="/home/sb/.fluxbox/pixmaps/bitwig.png"><action name="Execute"><command>bitwig-studio</command></action></item>
+    <item label="Max 9"><action name="Execute"><command>/home/sb/bin/max9.sh</command></action></item>
+    <item label="Hydrogen" icon="/home/sb/.fluxbox/pixmaps/hydrogen.png"><action name="Execute"><command>hydrogen</command></action></item>
+    <item label="Audacity" icon="/home/sb/.fluxbox/pixmaps/audacity.png"><action name="Execute"><command>env GDK_BACKEND=x11 audacity</command></action></item>
+    <item label="PlugData" icon="/home/sb/.fluxbox/pixmaps/plugdata.png"><action name="Execute"><command>plugdata</command></action></item>
+  </menu>
+
+  <menu id="plugin-hosts-menu" label="Plugin hosts">
+    <item label="Carla" icon="/home/sb/.fluxbox/pixmaps/carla.png"><action name="Execute"><command>carla</command></action></item>
+    <item label="Carla Rack" icon="/home/sb/.fluxbox/pixmaps/carla.png"><action name="Execute"><command>carla-rack</command></action></item>
+    <item label="Carla Patchbay" icon="/home/sb/.fluxbox/pixmaps/carla.png"><action name="Execute"><command>carla-patchbay</command></action></item>
+    <item label="Carla Control" icon="/home/sb/.fluxbox/pixmaps/carla-control.png"><action name="Execute"><command>carla-control</command></action></item>
+    <item label="Carla Settings" icon="/home/sb/.fluxbox/pixmaps/carla.png"><action name="Execute"><command>carla-settings</command></action></item>
+    <item label="PlugData" icon="/home/sb/.fluxbox/pixmaps/plugdata.png"><action name="Execute"><command>plugdata</command></action></item>
+    <menu id="open-in-carla-menu" label="Open in Carla">
+      <item label="Surge XT"><action name="Execute"><command>carla-single vst3 "/usr/lib/vst3/Surge XT.vst3"</command></action></item>
+      <item label="Surge XT Effects"><action name="Execute"><command>carla-single vst3 "/usr/lib/vst3/Surge XT Effects.vst3"</command></action></item>
+      <item label="Vaporizer2"><action name="Execute"><command>carla-single vst3 /usr/lib/vst3/VASTvaporizer2.vst3</command></action></item>
+      <item label="Geonkick"><action name="Execute"><command>carla-single vst3 /usr/lib/vst3/Geonkick.vst3</command></action></item>
+      <item label="Stochas"><action name="Execute"><command>carla-single vst3 /usr/lib/vst3/Stochas.vst3</command></action></item>
+      <item label="Dragonfly Hall"><action name="Execute"><command>carla-single vst3 /usr/lib/vst3/DragonflyHallReverb.vst3</command></action></item>
+      <item label="Dragonfly Room"><action name="Execute"><command>carla-single vst3 /usr/lib/vst3/DragonflyRoomReverb.vst3</command></action></item>
+      <item label="Dragonfly Plate"><action name="Execute"><command>carla-single vst3 /usr/lib/vst3/DragonflyPlateReverb.vst3</command></action></item>
+      <item label="OneTrick SIMIAN2"><action name="Execute"><command>carla-single vst3 "/usr/lib/vst3/OneTrick SIMIAN2.vst3"</command></action></item>
+      <item label="OneTrick CRYPTID"><action name="Execute"><command>carla-single vst3 "/usr/lib/vst3/OneTrick CRYPTID.vst3"</command></action></item>
+      <item label="OneTrick URCHIN"><action name="Execute"><command>carla-single vst3 "/usr/lib/vst3/OneTrick URCHIN.vst3"</command></action></item>
+      <item label="LSP Plugins"><action name="Execute"><command>carla-single vst3 /usr/lib/vst3/lsp-plugins.vst3</command></action></item>
+      <item label="BioTek 2"><action name="Execute"><command>carla-single vst3 "/home/sb/.vst3/BioTek 2.vst3"</command></action></item>
+      <item label="Renoise Redux"><action name="Execute"><command>carla-single vst3 /home/sb/.vst3/renoise_redux.vst3</command></action></item>
+    </menu>
+  </menu>
+
+  <menu id="synths-menu" label="Synths and drums">
+    <item label="ZynAddSubFX JACK" icon="/home/sb/.fluxbox/pixmaps/zynaddsubfx.png"><action name="Execute"><command>zynaddsubfx -I jack -O jack</command></action></item>
+    <item label="ZynAddSubFX JACK multi" icon="/home/sb/.fluxbox/pixmaps/zynaddsubfx.png"><action name="Execute"><command>zynaddsubfx -I jack -O jack-multi</command></action></item>
+    <item label="Hydrogen" icon="/home/sb/.fluxbox/pixmaps/hydrogen.png"><action name="Execute"><command>hydrogen</command></action></item>
+    <item label="Geonkick in Carla" icon="/home/sb/.fluxbox/pixmaps/hydrogen.png"><action name="Execute"><command>carla-single vst3 /usr/lib/vst3/Geonkick.vst3</command></action></item>
+  </menu>
+
+  <menu id="routing-menu" label="Routing and audio">
+    <item label="qpwgraph" icon="/home/sb/.fluxbox/pixmaps/qpwgraph.png"><action name="Execute"><command>qpwgraph</command></action></item>
+    <item label="Carla Patchbay" icon="/home/sb/.fluxbox/pixmaps/carla.png"><action name="Execute"><command>carla-patchbay</command></action></item>
+    <item label="QjackCtl" icon="/home/sb/.fluxbox/pixmaps/qjackctl.png"><action name="Execute"><command>qjackctl -platform xcb</command></action></item>
+    <item label="Volume Control" icon="/home/sb/.fluxbox/pixmaps/pavucontrol.png"><action name="Execute"><command>pavucontrol</command></action></item>
+    <item label="PipeWire status"><action name="Execute"><command>wezterm start - pw-top</command></action></item>
+    <item label="ALSA MIDI ports"><action name="Execute"><command>wezterm start - aconnect -l</command></action></item>
+  </menu>
+
+  <menu id="players-menu" label="Players">
+    <item label="Audacious" icon="/home/sb/.fluxbox/pixmaps/audacious.png"><action name="Execute"><command>audacious</command></action></item>
+    <item label="DeaDBeeF" icon="/home/sb/.fluxbox/pixmaps/deadbeef.png"><action name="Execute"><command>deadbeef</command></action></item>
+    <item label="foobar2000"><action name="Execute"><command>env WINEPREFIX=/home/sb/.wine wine "/home/sb/.wine/drive_c/Program Files (x86)/foobar2000/foobar2000.exe"</command></action></item>
+    <item label="VLC"><action name="Execute"><command>vlc</command></action></item>
+    <item label="mpv"><action name="Execute"><command>mpv --player-operation-mode=pseudo-gui</command></action></item>
+  </menu>
+
+  <menu id="files-menu" label="Files">
+    <item label="PCManFM"><action name="Execute"><command>pcmanfm --profile fluxbox-music</command></action></item>
+    <item label="Thunar"><action name="Execute"><command>thunar</command></action></item>
+    <item label="Music"><action name="Execute"><command>pcmanfm --profile fluxbox-music /home/sb/Music</command></action></item>
+    <item label="samples"><action name="Execute"><command>pcmanfm --profile fluxbox-music /home/sb/samples</command></action></item>
+    <item label="Projects"><action name="Execute"><command>pcmanfm --profile fluxbox-music /home/sb/Projects</command></action></item>
+    <item label="SunVox projects"><action name="Execute"><command>pcmanfm --profile fluxbox-music /run/media/sb/Projects/sunvox</command></action></item>
+    <item label="Renoise projects"><action name="Execute"><command>pcmanfm --profile fluxbox-music /run/media/sb/Projects/Renoise</command></action></item>
+    <item label="Renoise Linux projects"><action name="Execute"><command>pcmanfm --profile fluxbox-music /run/media/sb/Projects/Renoiselinux</command></action></item>
+    <item label="Bitwig Studio"><action name="Execute"><command>pcmanfm --profile fluxbox-music "/home/sb/Bitwig Studio"</command></action></item>
+    <separator/>
+    <item label="VST3 ~/.vst3"><action name="Execute"><command>pcmanfm --profile fluxbox-music /home/sb/.vst3</command></action></item>
+    <item label="VST3 ~/vst3"><action name="Execute"><command>pcmanfm --profile fluxbox-music /home/sb/vst3</command></action></item>
+    <item label="VST3 /usr/lib/vst3"><action name="Execute"><command>pcmanfm --profile fluxbox-music /usr/lib/vst3</command></action></item>
+    <item label="CLAP ~/.clap"><action name="Execute"><command>pcmanfm --profile fluxbox-music /home/sb/.clap</command></action></item>
+    <item label="LV2 /usr/lib/lv2"><action name="Execute"><command>pcmanfm --profile fluxbox-music /usr/lib/lv2</command></action></item>
+  </menu>
+
+  <menu id="terminal-menu" label="Terminal">
+    <item label="WezTerm"><action name="Execute"><command>wezterm</command></action></item>
+    <item label="Alacritty"><action name="Execute"><command>alacritty</command></action></item>
+    <item label="Xfce Terminal"><action name="Execute"><command>xfce4-terminal</command></action></item>
+  </menu>
+
+  <menu id="internet-menu" label="Internet">
+    <item label="Chromium" icon="/home/sb/.fluxbox/pixmaps/chromium.png"><action name="Execute"><command>chromium</command></action></item>
+    <item label="Gajim" icon="/home/sb/.fluxbox/pixmaps/gajim.png"><action name="Execute"><command>gajim</command></action></item>
+  </menu>
+
+  <!-- Fluxbox's [stylesdir] browser has no Openbox equivalent - Openbox
+       themes are a different format (~/.themes), picked once via rc.xml's
+       <theme><name>, not browsed live from a Fluxbox styles/ directory.
+       Dropped both [stylesdir] entries; kept the WM-agnostic GTK item. -->
+  <menu id="themes-menu" label="Themes">
+    <item label="GTK and icons…"><action name="Execute"><command>xfce4-appearance-settings</command></action></item>
+  </menu>
+
+  <menu id="panel-menu" label="Panel">
+    <item label="Normal (56px)"><action name="Execute"><command>/home/sb/.openbox-music/panel-size.sh normal</command></action></item>
+    <item label="Compact (30px)"><action name="Execute"><command>/home/sb/.openbox-music/panel-size.sh compact</command></action></item>
+    <item label="Toggle size"><action name="Execute"><command>/home/sb/.openbox-music/panel-size.sh toggle</command></action></item>
+  </menu>
+
+  <menu id="audacious-menu" label="Audacious">
+    <item label="Follow this workspace"><action name="Execute"><command>/home/sb/.openbox-music/audacious-follow.sh on</command></action></item>
+    <item label="Stay put"><action name="Execute"><command>/home/sb/.openbox-music/audacious-follow.sh off</command></action></item>
+    <item label="Toggle follow"><action name="Execute"><command>/home/sb/.openbox-music/audacious-follow.sh toggle</command></action></item>
+  </menu>
+
+  <menu id="session-menu" label="Session">
+    <!-- gap #3: fbrun -> rofi -->
+    <item label="Run…"><action name="Execute"><command>rofi -show run</command></action></item>
+    <item label="Screenshot"><action name="Execute"><command>scrot "/home/sb/Pictures/%Y-%m-%d-%H%M%S.png"</command></action></item>
+    <item label="Screenshot region"><action name="Execute"><command>scrot -s "/home/sb/Pictures/%Y-%m-%d-%H%M%S.png"</command></action></item>
+    <item label="Network"><action name="Execute"><command>nm-connection-editor</command></action></item>
+    <item label="Bluetooth"><action name="Execute"><command>blueman-manager</command></action></item>
+    <item label="Kill window"><action name="Execute"><command>xkill</command></action></item>
+    <separator/>
+    <menu id="workspace-menu"/>
+    <!-- [config] Configure Fluxbox dropped: no obconf/obconf-qt installed on
+         this system, so there is no Openbox settings GUI to launch. Edit
+         rc.xml by hand and Reload config below. -->
+    <menu id="themes-menu"/>
+    <item label="Reload config"><action name="Reconfigure"/></item>
+    <item label="Restart Openbox"><action name="Restart"/></item>
+    <separator/>
+    <item label="Leave music session"><action name="Exit"><prompt>no</prompt></action></item>
+  </menu>
+</menu>
+
+<!--
+  Client (right-click titlebar) menu, ported from ~/.fluxbox/windowmenu.
+
+  CORRECTION vs. openbox-port-plan.md gap #4: "client-menu" is not actually
+  data-driven in this Openbox (3.6.1) the way root-menu/session-menu/etc are.
+  A <menu id="client-menu"> block here is silently ignored - verified live:
+  defining one with a different item list still popped Openbox's own
+  hardcoded menu (Send to desktop / Layer / Restore / Move / Resize /
+  Iconify / Maximize / Roll up-down / Un-Decorate / Close). So there is
+  nothing to author for the parts windowmenu already covered
+  (shade->"Roll up/down", maximize, iconify, close, [sendto]->"Send to
+  desktop", [layer]->"Layer" - all present automatically, no menu.xml
+  entry needed or possible.
+
+  What's genuinely gone, confirmed by that same built-in list:
+    - [stick] (sticky/omnipresent toggle) - no equivalent item exists in
+      Openbox's built-in client-menu at all (bindable via ToggleOmnipresent
+      as a mouse/key action instead - see rc.xml's AllDesktops context)
+      but not reachable from this menu).
+    - [alpha] (opacity slider) - gap #4, no built-in equivalent.
+    - [extramenus] - gap #4, no built-in equivalent.
+-->
+
+
+</openbox_menu>

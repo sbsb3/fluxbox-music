@@ -1,0 +1,8 @@
+! Overrides for the Fluxbox music session. Merged after ~/.Xresources.
+Xcursor.theme: Adwaita
+Xcursor.size: 24
+Xft.dpi: 96
+Xft.antialias: true
+Xft.hinting: true
+Xft.hintstyle: hintslight
+Xft.rgba: rgb

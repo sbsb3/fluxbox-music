@@ -1,0 +1,263 @@
+#!/bin/sh
+#
+# Openbox music-production session
+# LightDM starts this via a dedicated .desktop entry (see Phase 5 /
+# PORT-NOTES.md) that execs this file directly, the same way
+# /usr/bin/startfluxbox execs ~/.fluxbox/startup.
+# XFCE autostart is intentionally NOT run.
+
+obdir="${HOME}/.openbox-music"
+
+export XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-Openbox}"
+export GDK_BACKEND=x11
+export QT_QPA_PLATFORM=xcb
+export GTK_THEME="${GTK_THEME:-Adwaita-dark}"
+export GTK_ICON_THEME_NAME="${GTK_ICON_THEME_NAME:-Adwaita-Red}"
+export XCURSOR_THEME="${XCURSOR_THEME:-Adwaita}"
+export XCURSOR_SIZE="${XCURSOR_SIZE:-24}"
+export GDK_SCALE=1
+export QT_AUTO_SCREEN_SCALE_FACTOR=0
+export JACK_NO_START_SERVER=1
+
+# Same plugin paths in every app started from this session
+export VST3_PATH="${HOME}/.vst3:${HOME}/vst3:/usr/lib/vst3${VST3_PATH:+:$VST3_PATH}"
+export VST_PATH="${HOME}/.vst:/usr/lib/vst${VST_PATH:+:$VST_PATH}"
+export CLAP_PATH="${HOME}/.clap:/usr/lib/clap${CLAP_PATH:+:$CLAP_PATH}"
+export LV2_PATH="${HOME}/.lv2:/usr/lib/lv2${LV2_PATH:+:$LV2_PATH}"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# Restore the saved 3-monitor layout before anything paints the desktop.
+if have autorandr; then
+    autorandr --change --default default >/dev/null 2>&1 || autorandr default >/dev/null 2>&1 || true
+fi
+
+# No beep, no screensaver blanking mid-take.
+if have xset; then
+    xset -b 2>/dev/null
+    xset s off 2>/dev/null
+    xset -dpms 2>/dev/null
+    xset s noblank 2>/dev/null
+fi
+
+# GTK theme / icons / cursor / DPI. Without this, X reports the L-shaped
+# virtual screen as ~45x143 DPI and the desktop looks broken.
+# apply-workspaces.sh stops xfsettingsd later: it copies XFCE workspace
+# names/count onto the root window and would undo Internet/Audio -- this is
+# a property-write race independent of which WM is running, not a
+# Fluxbox-specific quirk (verified live under Openbox too).
+if have xfsettingsd; then
+    xfsettingsd --disable-wm-check --replace &
+fi
+
+if [ -f "${HOME}/.Xresources" ]; then
+    xrdb -merge "${HOME}/.Xresources" 2>/dev/null
+fi
+if [ -f "${obdir}/Xresources" ]; then
+    xrdb -merge "${obdir}/Xresources" 2>/dev/null
+fi
+if [ -f "${HOME}/.Xmodmap" ]; then
+    xmodmap "${HOME}/.Xmodmap" 2>/dev/null
+fi
+
+if have xsetroot; then
+    xsetroot -solid "#0b0b0d" 2>/dev/null
+    xsetroot -cursor_name left_ptr 2>/dev/null
+fi
+
+set_wallpaper() {
+    # ~/.fluxbox/overlay's role ("styles must not fight feh/pcmanfm for the
+    # wallpaper") has no Openbox equivalent to carry over: Openbox themes
+    # have no background directive to fight in the first place, so this is
+    # just feh painting the root window same as before, nothing WM-side to
+    # neutralize.
+    if have feh && [ -f "${HOME}/.fluxbox/backgrounds/music-dark.png" ]; then
+        feh --no-fehbg --bg-fill "${HOME}/.fluxbox/backgrounds/music-dark.png"
+    elif have feh; then
+        feh --no-fehbg --bg-fill --solid-bg "#0b0b0d" /usr/share/pixmaps/openbox.png 2>/dev/null || true
+    fi
+}
+
+place_tint2() {
+    have xdotool || return 0
+    have xrandr || return 0
+    i=0
+    while [ "$i" -lt 15 ]; do
+        wid=$(xdotool search --class Tint2 2>/dev/null | head -n 1) || wid=
+        if [ -n "$wid" ]; then
+            geom=$(xrandr --query | awk '/ primary / {
+                for (i = 1; i <= NF; i++)
+                    if ($i ~ /^[0-9]+x[0-9]+\+[0-9]+\+[0-9]+$/) print $i
+            }')
+            [ -n "$geom" ] || return 0
+            w=${geom%%x*}
+            rest=${geom#*x}
+            h=${rest%%+*}
+            rest=${rest#*+}
+            x=${rest%%+*}
+            y=${rest#*+}
+            ph=$(xdotool getwindowgeometry "$wid" 2>/dev/null | awk '/Geometry:/{split($2,a,"x"); print a[2]}')
+            ph=${ph:-56}
+            # Pin to the top of the primary, not the bottom of the virtual screen.
+            py=$y
+            xdotool windowmove "$wid" "$x" "$py" 2>/dev/null || true
+            xdotool windowsize "$wid" "$w" "$ph" 2>/dev/null || true
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 0.2
+    done
+}
+
+wait_heads() {
+    have xrandr || return 0
+    last=
+    i=0
+    while [ "$i" -lt 25 ]; do
+        n=$(xrandr --listactivemonitors 2>/dev/null | awk 'NR==1 { print $2 }')
+        n=${n:-0}
+        if [ -n "$last" ] && [ "$n" = "$last" ] && [ "$n" -ge 1 ] && [ "$i" -ge 3 ]; then
+            return 0
+        fi
+        last=$n
+        i=$((i + 1))
+        sleep 0.2
+    done
+}
+
+set_wallpaper
+
+# WM first, then compositor, then desktop / panel / tray.
+# gap #6: fluxbox -log "..." & / fluxbox-remote replaced throughout this
+# file and its sibling scripts with openbox --config-file / openbox
+# --reconfigure. Desktop count/names that Fluxbox set at runtime via
+# fluxbox-remote now live statically in ~/.config/openbox/rc.xml's
+# <desktops> instead (see apply-workspaces.sh for what is still needed
+# at runtime: only the xfsettingsd fight, not the workspace add/rename).
+openbox --config-file "${HOME}/.config/openbox/rc.xml" &
+obpid=$!
+trap 'kill "$obpid" 2>/dev/null; wait "$obpid" 2>/dev/null
+      have systemctl && systemctl --user unmask xfce4-notifyd.service >/dev/null 2>&1' EXIT
+sleep 0.5
+
+if have picom; then
+    picom --config "${HOME}/.config/picom/fluxbox-music.conf" --daemon
+fi
+
+# pcmanfm only creates a desktop window per head at startup, and GTK's
+# primary workarea ignores a panel that is not at the virtual-screen top.
+# Wait for RandR to settle, publish per-monitor _GTK_WORKAREAS, then start
+# the desktop (and keep a watcher so Openbox restarts / hotplug stay in sync).
+wait_heads
+# Two workspaces for this session (Internet, Audio) are already set
+# statically by rc.xml's <desktops>; this only fights xfsettingsd now.
+if [ -x "${obdir}/apply-workspaces.sh" ]; then
+    "${obdir}/apply-workspaces.sh" || true
+fi
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${obdir}/desktop-heads.py" ]; then
+    "${obdir}/desktop-heads.py" --once || true
+fi
+if have pcmanfm; then
+    pcmanfm --desktop --profile fluxbox-music &
+fi
+# Supervised: this watcher owns _GTK_WORKAREAS for the whole session, so if
+# it ever exits (a stray Xlib error while probing a dying client used to do
+# it) the per-monitor workareas freeze and desktop icons drift back under the
+# panel. Keep its stderr instead of dropping it, so a repeat is diagnosable.
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${obdir}/desktop-heads.py" ]; then
+    (
+        while :; do
+            "${obdir}/desktop-heads.py" >>/tmp/desktop-heads-openbox.log 2>&1
+            echo "desktop-heads: exited ($?), restarting" >>/tmp/desktop-heads-openbox.log
+            sleep 2
+        done
+    ) &
+fi
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${obdir}/audacious-stack.py" ]; then
+    "${obdir}/audacious-stack.py" &
+fi
+# SunVox / Bitwig do not publish _NET_WM_ICON; stamp the desktop launcher PNG
+# onto those windows so tint2 tasks are not the generic placeholder.
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${obdir}/window-icons.py" ]; then
+    "${obdir}/window-icons.py" &
+fi
+
+if have tint2; then
+    # panel-size.sh maintains openbox-music-active.tint2rc (normal or compact).
+    tint_rc="${HOME}/.config/tint2/openbox-music-active.tint2rc"
+    if [ ! -e "$tint_rc" ]; then
+        tint_rc="${HOME}/.config/tint2/openbox-music.tint2rc"
+    fi
+    tint2 -c "$tint_rc" &
+    place_tint2 &
+fi
+# Right-click on tint2 task buttons: Move to workspace / min / max / close.
+if python3 -c "import Xlib, gi" >/dev/null 2>&1 && [ -x "${obdir}/task-menu.py" ]; then
+    "${obdir}/task-menu.py" &
+fi
+# Re-sync tint2's task list after workarea/desktop property churn so it does
+# not stick on another workspace's window buttons.
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${obdir}/taskbar-sync.py" ]; then
+    "${obdir}/taskbar-sync.py" &
+fi
+
+# Named dock, not the default "dock1" used by XFCE.
+# gap #1: Plank sits in Openbox's 'above' layer (rc.xml <application
+# class="Plank">) so maximized DAWs cannot bury it.
+#
+# gap #7: Fluxbox's plank-input-shape.py daemon is DROPPED here, not carried
+# over. Its docstring says it exists because Fluxbox reparents Plank into a
+# frame and copies only the bounding shape (never the input shape) onto that
+# frame, so the frame swallows clicks over the whole dock rect. Tested live
+# under Openbox (Xephyr): `xwininfo -root -tree` shows Plank's dock/tooltip
+# windows as direct children of root, with no such wrapping frame window at
+# all -- so the bug this daemon exists to fix has nothing to attach to here.
+# If click-through problems over the dock area do turn up in real use,
+# that's a live contradiction of this test and plank-input-shape.py should
+# be revisited (see PORT-NOTES.md).
+if have plank; then
+    plank -n music &
+fi
+
+# Fullscreen apps (Steam games in particular) sit in Normal layer even when
+# fullscreen, so tint2/Plank's always-on-top docks keep drawing over them.
+# Unmap both while a fullscreen window is up, remap once it's gone.
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${obdir}/fullscreen-panel.py" ]; then
+    "${obdir}/fullscreen-panel.py" &
+fi
+
+if [ -x /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 ]; then
+    /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+fi
+
+if have dunst; then
+    # xfce4-notifyd also claims org.freedesktop.Notifications. Its user-unit
+    # drop-ins (Restart=always, RestartSec=2, from the XFCE session) mean it
+    # keeps losing that race to dunst and respawning every few seconds --
+    # each respawn briefly opens/closes a root-level window, which churns
+    # _NET_CLIENT_LIST/_NET_CLIENT_LIST_STACKING and can knock tint2's
+    # per-desktop taskbar into showing the wrong workspace's task buttons.
+    # Mask it only for this session; the EXIT trap below unmasks it so a
+    # later XFCE login keeps its normal auto-restart behavior.
+    if have systemctl; then
+        systemctl --user mask xfce4-notifyd.service >/dev/null 2>&1 || true
+        systemctl --user stop xfce4-notifyd.service >/dev/null 2>&1 || true
+    fi
+    dunst -config "${HOME}/.config/dunst/fluxbox-music.conf" &
+fi
+# Tray applets must start after tint2 owns _NET_SYSTEM_TRAY.
+# They also need a restart if tint2 itself is restarted later.
+start_tray_applets() {
+    if have pasystray; then
+        pasystray &
+    fi
+    if have nm-applet; then
+        nm-applet &
+    fi
+}
+(sleep 0.6; start_tray_applets) &
+
+# feh before pcmanfm can lose the root pixmap; set it again once the desktop exists
+(sleep 0.8; set_wallpaper) &
+
+wait "$obpid"

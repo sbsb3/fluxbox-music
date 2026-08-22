@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Music menu
+Comment=Openbox root menu
+# Openbox has no remote-control verb to pop the root menu the way
+# `fluxbox-remote RootMenu` did. rc.xml binds Mod4+space to ShowMenu
+# root-menu, so replay that same keypress instead.
+Exec=xdotool key super+space
+Icon=audio-headphones
+Terminal=false
+Categories=AudioVideo;Audio;
+OnlyShowIn=Openbox;
+StartupNotify=false
