@@ -120,6 +120,12 @@
       [exec] (Toggle size) {~/.fluxbox/panel-size.sh toggle}
 [end]
 
+[submenu] (Audacious)
+      [exec] (Follow this workspace) {~/.fluxbox/audacious-follow.sh on}
+      [exec] (Stay put) {~/.fluxbox/audacious-follow.sh off}
+      [exec] (Toggle follow) {~/.fluxbox/audacious-follow.sh toggle}
+[end]
+
 [submenu] (Session)
       [exec] (Run…) {fbrun}
       [exec] (Screenshot) {scrot "$HOME/Pictures/%Y-%m-%d-%H%M%S.png"}
