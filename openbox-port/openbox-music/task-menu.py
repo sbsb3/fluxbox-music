@@ -59,7 +59,8 @@ def debug(*args):
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gtk
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, GLib, Gtk
 
 from Xlib import X, display, error
 from Xlib.ext import xinput
@@ -323,6 +324,7 @@ class Grabber:
         self.chronic_classes = set()
         self.started = GLib.get_monotonic_time() / 1e6
         self.menu = None
+        self.anchor = None  # set by main() once the anchor window exists
 
     def _ungrab(self):
         for wid in list(self.grabbed_ids):
@@ -594,10 +596,42 @@ class Grabber:
         # script has none (it's a headless daemon with no window of its
         # own), and asking it to figure one out from "no triggering event"
         # is a hard GTK-CRITICAL assertion failure, not a graceful
-        # fallback. Back to the classic call, real event time included.
-        t = int(event_time) if event_time else Gtk.get_current_event_time()
-        debug(f"popup: calling menu.popup(), event_time={t}")
-        menu.popup(None, None, None, None, 3, t)
+        # fallback. Back to the classic call.
+        #
+        # event_time (the real XI2 press timestamp) consistently failed
+        # to show anything live -- visible=False/mapped=False every time,
+        # first attempt included, no exception -- while every synthetic
+        # (XTest) test passed. By the time this runs, that timestamp has
+        # been through a hit-test, an XIAllowEvents round trip
+        # (self.d.sync()), and a deferred GLib.idle_add tick; a real
+        # button press sitting behind a heavier desktop plausibly ages
+        # past whatever GDK's own grab considers fresh enough by then, in
+        # a way an XTest click's near-zero latency never does. X.CurrentTime
+        # (0) tells the server to use its own idea of "now" for the grab
+        # instead of trusting a timestamp we're no longer sure is fresh.
+        # Neither mattered live -- still visible=False, mapped=False, no
+        # exception, GDK_DEBUG=input,events,misc showing nothing either
+        # (a release GTK build, presumably). menu.popup()'s plain form
+        # passes device=None, which GTK resolves via
+        # gdk_get_current_event_device() -- meaningless here, our press
+        # came in over raw Xlib, never through GDK's own event queue, so
+        # there IS no "current event device" for GTK to find. Look up the
+        # real GdkDevice explicitly instead of leaving GTK to guess at one
+        # it was never going to have.
+        device = None
+        seat = Gdk.Display.get_default().get_default_seat()
+        if seat is not None:
+            device = seat.get_pointer()
+        # button=3 (the real button that opened this) puts GTK into
+        # classic press-drag-release mode: fine for a menu opened by
+        # holding the button down and dragging to an item, but it means
+        # letting go of the button at all -- without having dragged onto
+        # an item first -- reads as "cancel", not "leave it open". button=0
+        # is what GTK expects from anything that isn't that literal
+        # press-and-hold gesture (a keyboard shortcut, e.g.) and opens the
+        # ordinary click-to-open, click-again-to-choose menu instead.
+        debug(f"popup: calling menu.popup_for_device(), device={device}, event_time was {event_time}")
+        menu.popup_for_device(device, None, None, None, None, 0, X.CurrentTime)
         debug(f"popup: menu.popup() returned, visible={menu.get_visible()} mapped={menu.get_mapped()}")
 
         def check_later():
@@ -620,6 +654,24 @@ class Grabber:
     def xi_allow(self, deviceid, mode):
         try:
             xi_allow_events(self.d, self.xi_major, deviceid, mode)
+            # XIAllowEvents unfreezes event *delivery* -- it does not end
+            # the device grab itself. A passive grab activating (ours, on
+            # a real Windows+Shift+right-click) implicitly becomes an
+            # active one, held by us, for as long as the button stays
+            # physically down: X ends that automatically on release, not
+            # on AllowEvents. A diagnostic grab probe right where the menu
+            # would show came back ALREADY_GRABBED, every real click,
+            # every time -- for GTK's own popup grab attempt, that grab is
+            # us. A synthetic (XTest) click's press+release happens near
+            # instantly, well before our own code reaches that point, so
+            # it was never actually reproducing this even once, which is
+            # why every synthetic test passed regardless of anything else
+            # tried. A real button held for any normal human duration is
+            # long enough that we always got there first. XIUngrabDevice
+            # ends the implicit active grab immediately without touching
+            # our own passive registration underneath it (a separate
+            # table -- ending the active session doesn't deregister it).
+            self.d.xinput_ungrab_device(deviceid, X.CurrentTime)
             self.d.flush()
         except error.Error:
             pass
@@ -712,14 +764,18 @@ class Grabber:
                     debug(f"on_event: popup() raised {e!r}")
                 return False
 
-            # Deferred a tick: calling this inline, in the same dispatch as
-            # the raw XI2 event that triggered it, sometimes leaves GTK's
-            # own pointer grab for the menu unable to take (the button
-            # release for this same click may not have finished settling
-            # at the X server yet) -- the menu then shows and immediately
-            # self-dismisses. Letting one main-loop iteration pass first
-            # reliably avoids the race.
-            GLib.idle_add(show_popup)
+            # A real 200ms delay, not just one main-loop tick: this runs
+            # on the button PRESS, and we get there fast enough that a
+            # real physical click is still actually held down at this
+            # point (confirmed live -- the menu opened but tracked the
+            # button as still down, needing it held to stay open, exactly
+            # what GTK's menu does when a button is genuinely down when
+            # it takes its own grab). A synthetic (XTest) click's
+            # press+release happens near instantly, well before we'd ever
+            # reach this line, which is why that case always looked fine
+            # regardless of delay. 200ms is well past any normal human
+            # click's press-to-release gap and still reads as instant.
+            GLib.timeout_add(200, show_popup)
 
 
 def main(argv):
@@ -732,6 +788,18 @@ def main(argv):
         )
     except error.Error:
         pass
+
+    # This script never has a real Gtk.Window of its own -- only ad hoc
+    # Gtk.Menu popups, realized on demand. Kept as a defensive fallback
+    # (the standard trick for headless GTK utilities that only ever show
+    # menus/tooltips) even though it turned out not to be the actual fix
+    # for the popup never showing on a real click -- Grabber.xi_allow's
+    # own comment has that story.
+    anchor = Gtk.Window(type=Gtk.WindowType.POPUP)
+    anchor.set_default_size(1, 1)
+    anchor.move(-100, -100)
+    anchor.show()
+    g.anchor = anchor
 
     def drain(_fd=None, _cond=None):
         try:
