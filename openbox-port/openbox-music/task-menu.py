@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Super+right-click Send To on tint2 task buttons (titlebar-less DAWs too).
+"""Windows+Shift+right-click Send To on tint2 task buttons (DAWs too).
 
 tint2 has no per-task context menu. Openbox's own client-menu (with Send To)
 only opens from a titlebar, which Renoise / Bitwig / Max often do not have.
@@ -16,15 +16,28 @@ take.
 
 XInput2 passive grabs (XIGrabButton) are a separate grab table from core
 XGrabButton, so Mod4+Button3 there does NOT conflict with Openbox's core
-grab of the same nominal combo -- confirmed live via a raw protocol probe.
-Use that instead: grab Mod4+Button3 (Windows+right-click) via XI2 on the
-frame window in front of tint2, GrabModeSync, and release every captured
-event with XIAllowEvents (hand-rolled: python-xlib wraps the rest of XI2's
-passive-grab requests but not this one) -- Async to consume a hit, Replay
-to let a miss fall through as before.
+grab of the same nominal combo at *registration* time -- confirmed live via
+a raw protocol probe (ours succeeds where a core-protocol attempt gets
+BadAccess). But the two tables still both match the SAME physical button
+press at *delivery* time, and which one the server actually hands the event
+to turned out not to be reliably ours: plain Mod4+Button3 only reached this
+script roughly half the time live-testing it, the rest silently going to
+Openbox's own Frame-context grab instead (its client-menu popping up for
+whatever else was focused). Mod4+Shift+Button3 has no such competing
+core-protocol registration anywhere in rc.xml to race against, and testing
+it back-to-back many times over came back with zero misses. Use that
+combo -- grab it via XI2 on the frame window in front of tint2,
+GrabModeSync, and release every captured event with XIAllowEvents
+(hand-rolled: python-xlib wraps the rest of XI2's passive-grab requests but
+not this one) -- Async to consume a hit, Replay to let a miss fall through
+as before.
 
-When the click hits a task, show Send To plus min/max/close. Clicks that
-miss a task are replayed (launchers / clock / tray).
+When the click hits a task, show Send To plus min/max/close (deferred one
+main-loop tick past the triggering event -- inline, GTK's own popup grab
+sometimes couldn't take because this same click's button-release hadn't
+finished settling at the server yet, and the menu would show and instantly
+self-dismiss). Clicks that miss a task are replayed (launchers / clock /
+tray).
 
 Plank overwrites _NET_WM_ICON_GEOMETRY with a 0x0 dock slot for pinned apps.
 Cache the last geometry that sat on the tint2 panel so those tasks still hit.
@@ -46,7 +59,8 @@ def debug(*args):
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gtk
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, GLib, Gtk
 
 from Xlib import X, display, error
 from Xlib.ext import xinput
@@ -61,14 +75,15 @@ USR1_MAX_STRIKES = 2
 # profile, whose 30px-tall panel (panel-size.sh) reports task icons
 # shorter than the 56px normal profile ever would.
 MIN_TASK_H = 16
-# Windows key, plus its Lock/NumLock variants -- X grabs are keyed on the
-# exact modifier state, so "Super regardless of lock keys" needs one grab
-# per combination rather than a single wildcard (see module docstring).
+# Windows+Shift, plus its Lock/NumLock variants -- X grabs are keyed on the
+# exact modifier state, so "Super+Shift regardless of lock keys" needs one
+# grab per combination rather than a single wildcard. Shift is load-bearing
+# here, not decorative: see module docstring for why plain Mod4 isn't enough.
 GRAB_MODS = (
-    X.Mod4Mask,
-    X.Mod4Mask | X.LockMask,
-    X.Mod4Mask | X.Mod2Mask,
-    X.Mod4Mask | X.LockMask | X.Mod2Mask,
+    X.Mod4Mask | X.ShiftMask,
+    X.Mod4Mask | X.ShiftMask | X.LockMask,
+    X.Mod4Mask | X.ShiftMask | X.Mod2Mask,
+    X.Mod4Mask | X.ShiftMask | X.LockMask | X.Mod2Mask,
 )
 # XI2 GenericEvent core type, and the XI_ButtonPress sub-type carried in its
 # extension payload -- separate namespaces (X.ButtonPress is the core event).
@@ -556,6 +571,15 @@ class Grabber:
         def forget(_m):
             if self.menu is menu:
                 self.menu = None
+            # Force GDK's own pointer/keyboard grab for this popup to let
+            # go right away. Left to its own cleanup, it was sometimes
+            # still settling when the very next Windows+right-click came
+            # in, which made that click's XI2 event vanish silently --
+            # the button-press equivalent of two doors trying to close on
+            # each other at once.
+            seat = Gdk.Display.get_default().get_default_seat()
+            if seat is not None:
+                seat.ungrab()
 
         menu.connect("deactivate", forget)
         menu.show_all()
@@ -637,10 +661,23 @@ class Grabber:
         finally:
             self.xi_allow(deviceid, mode)
         if win is not None:
-            try:
-                self.popup(win, data["time"])
-            except Exception as e:
-                debug(f"on_event: popup() raised {e!r}")
+            event_time = data["time"]
+
+            def show_popup(_win=win, _t=event_time):
+                try:
+                    self.popup(_win, _t)
+                except Exception as e:
+                    debug(f"on_event: popup() raised {e!r}")
+                return False
+
+            # Deferred a tick: calling this inline, in the same dispatch as
+            # the raw XI2 event that triggered it, sometimes leaves GTK's
+            # own pointer grab for the menu unable to take (the button
+            # release for this same click may not have finished settling
+            # at the X server yet) -- the menu then shows and immediately
+            # self-dismisses. Letting one main-loop iteration pass first
+            # reliably avoids the race.
+            GLib.idle_add(show_popup)
 
 
 def main(argv):
