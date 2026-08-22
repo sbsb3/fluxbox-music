@@ -59,8 +59,7 @@ def debug(*args):
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GLib, Gtk
+from gi.repository import GLib, Gtk
 
 from Xlib import X, display, error
 from Xlib.ext import xinput
@@ -569,23 +568,43 @@ class Grabber:
         menu.append(cl)
 
         def forget(_m):
+            debug("popup: deactivate fired")
             if self.menu is menu:
                 self.menu = None
-            # Force GDK's own pointer/keyboard grab for this popup to let
-            # go right away. Left to its own cleanup, it was sometimes
-            # still settling when the very next Windows+right-click came
-            # in, which made that click's XI2 event vanish silently --
-            # the button-press equivalent of two doors trying to close on
-            # each other at once.
-            seat = Gdk.Display.get_default().get_default_seat()
-            if seat is not None:
-                seat.ungrab()
+            # NOTE: used to force-ungrab the GDK seat here too, on the
+            # theory that GTK's own popup grab lingering was why the very
+            # next Windows+Shift+right-click sometimes went nowhere.
+            # Suspect now it was the opposite problem: this ungrab call
+            # firing (only ever reached once a menu has actually shown and
+            # then closed) lines up with every popup attempt afterward
+            # going silently blank -- exactly the failure mode this was
+            # meant to prevent, just delayed by one popup. The
+            # Mod4+Shift+Button3 combo already fixed the race this existed
+            # for, from a different angle (no competing core-protocol
+            # grab left to lose to), so this isn't pulling its weight
+            # anymore and may be actively causing the regression. Removed;
+            # see git history if it needs to come back.
 
         menu.connect("deactivate", forget)
         menu.show_all()
         self.menu = menu
+        # popup_at_pointer(), the GTK-recommended replacement for the
+        # classic call below, needs a GdkWindow to anchor its positioning
+        # rect to -- normally the widget/window that triggered it. This
+        # script has none (it's a headless daemon with no window of its
+        # own), and asking it to figure one out from "no triggering event"
+        # is a hard GTK-CRITICAL assertion failure, not a graceful
+        # fallback. Back to the classic call, real event time included.
         t = int(event_time) if event_time else Gtk.get_current_event_time()
+        debug(f"popup: calling menu.popup(), event_time={t}")
         menu.popup(None, None, None, None, 3, t)
+        debug(f"popup: menu.popup() returned, visible={menu.get_visible()} mapped={menu.get_mapped()}")
+
+        def check_later():
+            debug(f"popup: 300ms later, visible={menu.get_visible()} mapped={menu.get_mapped()}")
+            return False
+
+        GLib.timeout_add(300, check_later)
 
     def allow(self, mode):
         # Core AllowEvents. Nothing holds a core grab anymore (see module
@@ -671,6 +690,18 @@ class Grabber:
             win = None
         finally:
             self.xi_allow(deviceid, mode)
+            # xi_allow()'s flush() only sends our release; it doesn't wait
+            # for the server to have actually processed it. GTK's popup
+            # grab lives on GDK's own, separate X connection -- if that
+            # grab attempt reaches the server first, on real hardware
+            # timing (never reproduced with synthetic XTest clicks in
+            # testing), it can find the device still marked frozen and
+            # fail with no error we'd see, and the menu never appears.
+            # A real round trip on our own connection closes that race.
+            try:
+                self.d.sync()
+            except error.Error:
+                pass
         if win is not None:
             event_time = data["time"]
 
