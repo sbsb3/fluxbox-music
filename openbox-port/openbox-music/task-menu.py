@@ -1,20 +1,43 @@
 #!/usr/bin/env python3
-"""Super+right-click Send To on tint2 task buttons (titlebar-less DAWs too).
+"""Windows+Shift+right-click Send To on tint2 task buttons (DAWs too).
 
 tint2 has no per-task context menu. Openbox's own client-menu (with Send To)
 only opens from a titlebar, which Renoise / Bitwig / Max often do not have.
 
-Grab Mod4+Button3 (Windows+right-click) on the panel -- plain, unmodified
-Button3 is not ours to take: Openbox itself permanently holds a passive
-Button3/AnyModifier grab on every client window (including tint2, a dock)
-for click-to-focus, and X allows only one owner per exact button+modifier
-combo on a window. A grab for Mod4Mask specifically (plus its Lock/NumLock
-variants -- X tracks those as separate modifier states) does not overlap
-that reservation and is free for us to take, matching the Frame context's
-own W-Right bind in rc.xml for the same titlebar-less DAWs (see below).
+Core-protocol XGrabButton is not usable here, on ANY button+modifier combo:
+the window that actually receives clicks is not tint2's own window at all,
+but an invisible frame Openbox creates in front of every top-level window it
+manages (docks included) -- and Openbox itself permanently holds passive
+grabs there: plain Button3/AnyModifier for click-to-focus, and Mod4+Button3
+for the Frame context's own "W-Right -> client-menu" bind (rc.xml, the same
+one that gives titlebar-less DAWs their Send To menu). X allows only one
+owner per exact button+modifier combo per window, so neither is ours to
+take.
 
-When the click hits a task, show Send To plus min/max/close. Clicks that
-miss a task are replayed (launchers / clock / tray).
+XInput2 passive grabs (XIGrabButton) are a separate grab table from core
+XGrabButton, so Mod4+Button3 there does NOT conflict with Openbox's core
+grab of the same nominal combo at *registration* time -- confirmed live via
+a raw protocol probe (ours succeeds where a core-protocol attempt gets
+BadAccess). But the two tables still both match the SAME physical button
+press at *delivery* time, and which one the server actually hands the event
+to turned out not to be reliably ours: plain Mod4+Button3 only reached this
+script roughly half the time live-testing it, the rest silently going to
+Openbox's own Frame-context grab instead (its client-menu popping up for
+whatever else was focused). Mod4+Shift+Button3 has no such competing
+core-protocol registration anywhere in rc.xml to race against, and testing
+it back-to-back many times over came back with zero misses. Use that
+combo -- grab it via XI2 on the frame window in front of tint2,
+GrabModeSync, and release every captured event with XIAllowEvents
+(hand-rolled: python-xlib wraps the rest of XI2's passive-grab requests but
+not this one) -- Async to consume a hit, Replay to let a miss fall through
+as before.
+
+When the click hits a task, show Send To plus min/max/close (deferred one
+main-loop tick past the triggering event -- inline, GTK's own popup grab
+sometimes couldn't take because this same click's button-release hadn't
+finished settling at the server yet, and the menu would show and instantly
+self-dismiss). Clicks that miss a task are replayed (launchers / clock /
+tray).
 
 Plank overwrites _NET_WM_ICON_GEOMETRY with a 0x0 dock slot for pinned apps.
 Cache the last geometry that sat on the tint2 panel so those tasks still hit.
@@ -36,9 +59,12 @@ def debug(*args):
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gtk
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, GLib, Gtk
 
 from Xlib import X, display, error
+from Xlib.ext import xinput
+from Xlib.protocol import rq
 
 POLL_TINT2 = 2.0
 ALL_DESKTOPS = 0xFFFFFFFF
@@ -49,15 +75,49 @@ USR1_MAX_STRIKES = 2
 # profile, whose 30px-tall panel (panel-size.sh) reports task icons
 # shorter than the 56px normal profile ever would.
 MIN_TASK_H = 16
-# Windows key, plus its Lock/NumLock variants -- X grabs are keyed on the
-# exact modifier state, so "Super regardless of lock keys" needs one grab
-# per combination rather than a single wildcard (see module docstring).
+# Windows+Shift, plus its Lock/NumLock variants -- X grabs are keyed on the
+# exact modifier state, so "Super+Shift regardless of lock keys" needs one
+# grab per combination rather than a single wildcard. Shift is load-bearing
+# here, not decorative: see module docstring for why plain Mod4 isn't enough.
 GRAB_MODS = (
-    X.Mod4Mask,
-    X.Mod4Mask | X.LockMask,
-    X.Mod4Mask | X.Mod2Mask,
-    X.Mod4Mask | X.LockMask | X.Mod2Mask,
+    X.Mod4Mask | X.ShiftMask,
+    X.Mod4Mask | X.ShiftMask | X.LockMask,
+    X.Mod4Mask | X.ShiftMask | X.Mod2Mask,
+    X.Mod4Mask | X.ShiftMask | X.LockMask | X.Mod2Mask,
 )
+# XI2 GenericEvent core type, and the XI_ButtonPress sub-type carried in its
+# extension payload -- separate namespaces (X.ButtonPress is the core event).
+GENERIC_EVENT = 35
+# XIAllowEvents event_mode values (XI2 protocol; not core AllowEvents' modes).
+XI_ASYNC_DEVICE = 0
+XI_REPLAY_DEVICE = 2
+
+
+class XIAllowEvents(rq.Request):
+    """Hand-rolled: python-xlib's xinput module wraps XIPassiveGrabDevice
+    and friends but not this one. Wire format per the XI2 protocol spec,
+    request minor-opcode 53 (the gap between XIUngrabDevice=52 and
+    XIPassiveGrabDevice=54 in Xlib/ext/xinput.py)."""
+
+    _request = rq.Struct(
+        rq.Card8("opcode"),
+        rq.Opcode(53),
+        rq.RequestLength(),
+        rq.Card32("time"),
+        rq.Card16("deviceid"),
+        rq.Card8("event_mode"),
+        rq.Pad(1),
+    )
+
+
+def xi_allow_events(d, xi_major, deviceid, event_mode):
+    XIAllowEvents(
+        display=d.display,
+        opcode=xi_major,
+        time=X.CurrentTime,
+        deviceid=deviceid,
+        event_mode=event_mode,
+    )
 # fullscreen-panel.py touches this while it has tint2 unmapped for a
 # fullscreen window -- every task's icon geometry looks "missing" then, which
 # would otherwise read as exactly the fault this self-heal exists to catch.
@@ -160,6 +220,39 @@ def find_tint2(d, atom_list):
     return None
 
 
+def find_frame(d, panel):
+    """The window that actually receives clicks over tint2: an invisible,
+    class-less, same-geometry sibling Openbox creates in front of every
+    top-level window it manages, docks included (see module docstring).
+    It is a plain child of root, not of tint2 -- found by matching absolute
+    geometry among root's other children, not by walking tint2's own tree.
+    """
+    if panel is None:
+        return None
+    root = d.screen().root
+    try:
+        g = panel.get_geometry()
+        t = root.translate_coords(panel, 0, 0)
+    except (error.BadWindow, error.BadDrawable):
+        return None
+    target = (t.x, t.y, g.width, g.height)
+    try:
+        children = root.query_tree().children
+    except (error.BadWindow, error.BadDrawable):
+        return None
+    for c in children:
+        if c.id == panel.id:
+            continue
+        try:
+            cg = c.get_geometry()
+            ct = root.translate_coords(c, 0, 0)
+        except (error.BadWindow, error.BadDrawable):
+            continue
+        if (ct.x, ct.y, cg.width, cg.height) == target:
+            return c
+    return None
+
+
 def atom_list_has(win, atom, wanted):
     try:
         prop = win.get_full_property(atom, X.AnyPropertyType)
@@ -221,6 +314,7 @@ class Grabber:
             "skip": intern(d, "_NET_WM_STATE_SKIP_TASKBAR"),
         }
         self.panel = None
+        self.xi_major = d.query_extension("XInputExtension").major_opcode
         self.grabbed_ids = set()
         self.task_geom = {}
         self.watching = set()
@@ -230,41 +324,45 @@ class Grabber:
         self.chronic_classes = set()
         self.started = GLib.get_monotonic_time() / 1e6
         self.menu = None
+        self.anchor = None  # set by main() once the anchor window exists
 
     def _ungrab(self):
         for wid in list(self.grabbed_ids):
             try:
                 w = self.d.create_resource_object("window", wid)
-                for mods in GRAB_MODS:
-                    w.ungrab_button(X.Button3, mods)
+                # Free-function call, self passed explicitly: python-xlib's
+                # xinput module defines this but never registers it as a
+                # bound Window method (unlike e.g. xinput_grab_keycode).
+                xinput.passive_ungrab_device(
+                    w, xinput.AllMasterDevices, X.Button3, xinput.GrabtypeButton, list(GRAB_MODS)
+                )
             except (error.BadWindow, error.BadDrawable, error.BadAccess):
                 pass
         self.grabbed_ids.clear()
 
     def _grab_win(self, win):
-        ok_count = 0
-        for mods in GRAB_MODS:
-            try:
-                grab_err = []
-                win.grab_button(
-                    X.Button3,
-                    mods,
-                    False,
-                    X.ButtonPressMask,
-                    X.GrabModeSync,
-                    X.GrabModeAsync,
-                    X.NONE,
-                    X.NONE,
-                    onerror=lambda err, req: grab_err.append(err),
-                )
-                self.d.sync()
-                if grab_err:
-                    debug(f"_grab_win: grab_button on {win.id:#x} mods={mods:#x} failed: {grab_err[0]!r}")
-                    continue
-                ok_count += 1
-            except (error.BadWindow, error.BadDrawable, error.BadAccess):
-                continue
-        debug(f"_grab_win: grab_button on {win.id:#x} succeeded for {ok_count}/{len(GRAB_MODS)} modifier combos")
+        try:
+            reply = xinput.passive_grab_device(
+                win,
+                xinput.AllMasterDevices,
+                X.CurrentTime,
+                X.Button3,
+                xinput.GrabtypeButton,
+                X.GrabModeSync,
+                X.GrabModeAsync,
+                False,
+                xinput.ButtonPressMask,
+                list(GRAB_MODS),
+            )
+        except (error.BadWindow, error.BadDrawable, error.BadAccess) as e:
+            debug(f"_grab_win: XI2 grab on {win.id:#x} raised {e!r}")
+            return False
+        # The reply lists only the modifier combos that FAILED; empty means
+        # every one of GRAB_MODS was granted.
+        failed = list(reply.modifiers)
+        ok_count = len(GRAB_MODS) - len(failed)
+        debug(f"_grab_win: XI2 grab_button on {win.id:#x} succeeded for {ok_count}/{len(GRAB_MODS)} modifier combos"
+              + (f", failed={[hex(m) for m in failed]}" if failed else ""))
         if ok_count:
             self.grabbed_ids.add(win.id)
             return True
@@ -276,11 +374,18 @@ class Grabber:
             self._ungrab()
             self.panel = None
             return
-        if panel.id not in self.grabbed_ids:
-            self._ungrab()
-            self._grab_win(panel)
-            self.d.sync()
         self.panel = panel
+        # Not panel itself: the window that actually receives clicks is an
+        # invisible Openbox-created frame sitting in front of it (module
+        # docstring). Re-resolve every call -- tint2 restarts get a new
+        # frame too, and the old frame's grab dies with its window anyway.
+        frame = find_frame(self.d, panel)
+        if frame is None:
+            self._ungrab()
+            return
+        if frame.id not in self.grabbed_ids:
+            self._ungrab()
+            self._grab_win(frame)
 
     def watch_clients(self):
         live = set()
@@ -465,18 +570,108 @@ class Grabber:
         menu.append(cl)
 
         def forget(_m):
+            debug("popup: deactivate fired")
             if self.menu is menu:
                 self.menu = None
+            # NOTE: used to force-ungrab the GDK seat here too, on the
+            # theory that GTK's own popup grab lingering was why the very
+            # next Windows+Shift+right-click sometimes went nowhere.
+            # Suspect now it was the opposite problem: this ungrab call
+            # firing (only ever reached once a menu has actually shown and
+            # then closed) lines up with every popup attempt afterward
+            # going silently blank -- exactly the failure mode this was
+            # meant to prevent, just delayed by one popup. The
+            # Mod4+Shift+Button3 combo already fixed the race this existed
+            # for, from a different angle (no competing core-protocol
+            # grab left to lose to), so this isn't pulling its weight
+            # anymore and may be actively causing the regression. Removed;
+            # see git history if it needs to come back.
 
         menu.connect("deactivate", forget)
         menu.show_all()
         self.menu = menu
-        t = int(event_time) if event_time else Gtk.get_current_event_time()
-        menu.popup(None, None, None, None, 3, t)
+        # popup_at_pointer(), the GTK-recommended replacement for the
+        # classic call below, needs a GdkWindow to anchor its positioning
+        # rect to -- normally the widget/window that triggered it. This
+        # script has none (it's a headless daemon with no window of its
+        # own), and asking it to figure one out from "no triggering event"
+        # is a hard GTK-CRITICAL assertion failure, not a graceful
+        # fallback. Back to the classic call.
+        #
+        # event_time (the real XI2 press timestamp) consistently failed
+        # to show anything live -- visible=False/mapped=False every time,
+        # first attempt included, no exception -- while every synthetic
+        # (XTest) test passed. By the time this runs, that timestamp has
+        # been through a hit-test, an XIAllowEvents round trip
+        # (self.d.sync()), and a deferred GLib.idle_add tick; a real
+        # button press sitting behind a heavier desktop plausibly ages
+        # past whatever GDK's own grab considers fresh enough by then, in
+        # a way an XTest click's near-zero latency never does. X.CurrentTime
+        # (0) tells the server to use its own idea of "now" for the grab
+        # instead of trusting a timestamp we're no longer sure is fresh.
+        # Neither mattered live -- still visible=False, mapped=False, no
+        # exception, GDK_DEBUG=input,events,misc showing nothing either
+        # (a release GTK build, presumably). menu.popup()'s plain form
+        # passes device=None, which GTK resolves via
+        # gdk_get_current_event_device() -- meaningless here, our press
+        # came in over raw Xlib, never through GDK's own event queue, so
+        # there IS no "current event device" for GTK to find. Look up the
+        # real GdkDevice explicitly instead of leaving GTK to guess at one
+        # it was never going to have.
+        device = None
+        seat = Gdk.Display.get_default().get_default_seat()
+        if seat is not None:
+            device = seat.get_pointer()
+        # button=3 (the real button that opened this) puts GTK into
+        # classic press-drag-release mode: fine for a menu opened by
+        # holding the button down and dragging to an item, but it means
+        # letting go of the button at all -- without having dragged onto
+        # an item first -- reads as "cancel", not "leave it open". button=0
+        # is what GTK expects from anything that isn't that literal
+        # press-and-hold gesture (a keyboard shortcut, e.g.) and opens the
+        # ordinary click-to-open, click-again-to-choose menu instead.
+        debug(f"popup: calling menu.popup_for_device(), device={device}, event_time was {event_time}")
+        menu.popup_for_device(device, None, None, None, None, 0, X.CurrentTime)
+        debug(f"popup: menu.popup() returned, visible={menu.get_visible()} mapped={menu.get_mapped()}")
+
+        def check_later():
+            debug(f"popup: 300ms later, visible={menu.get_visible()} mapped={menu.get_mapped()}")
+            return False
+
+        GLib.timeout_add(300, check_later)
 
     def allow(self, mode):
+        # Core AllowEvents. Nothing holds a core grab anymore (see module
+        # docstring), so this is now only the safety-valve's belt-and-braces
+        # call in main() -- harmless no-op if the server has nothing of
+        # ours to release.
         try:
             self.d.allow_events(mode, X.CurrentTime)
+            self.d.flush()
+        except error.Error:
+            pass
+
+    def xi_allow(self, deviceid, mode):
+        try:
+            xi_allow_events(self.d, self.xi_major, deviceid, mode)
+            # XIAllowEvents unfreezes event *delivery* -- it does not end
+            # the device grab itself. A passive grab activating (ours, on
+            # a real Windows+Shift+right-click) implicitly becomes an
+            # active one, held by us, for as long as the button stays
+            # physically down: X ends that automatically on release, not
+            # on AllowEvents. A diagnostic grab probe right where the menu
+            # would show came back ALREADY_GRABBED, every real click,
+            # every time -- for GTK's own popup grab attempt, that grab is
+            # us. A synthetic (XTest) click's press+release happens near
+            # instantly, well before our own code reaches that point, so
+            # it was never actually reproducing this even once, which is
+            # why every synthetic test passed regardless of anything else
+            # tried. A real button held for any normal human duration is
+            # long enough that we always got there first. XIUngrabDevice
+            # ends the implicit active grab immediately without touching
+            # our own passive registration underneath it (a separate
+            # table -- ending the active session doesn't deregister it).
+            self.d.xinput_ungrab_device(deviceid, X.CurrentTime)
             self.d.flush()
         except error.Error:
             pass
@@ -493,34 +688,94 @@ class Grabber:
                 except (error.BadWindow, error.BadDrawable):
                     pass
             return
-        # GrabModeSync freezes *all* pointer delivery until AllowEvents.
-        # Always release the sync grab, even if hit-testing throws.
-        if ev.type != X.ButtonPress or getattr(ev, "detail", None) != X.Button3:
+        if ev.type in (X.CreateNotify, X.DestroyNotify, X.ReparentNotify, X.UnmapNotify, X.MapNotify):
+            # Openbox destroys and recreates tint2's invisible frame (the
+            # window our XI2 grab actually lives on -- see module
+            # docstring) on its own schedule, not ours: e.g. every unmap/
+            # remap cycle fullscreen-panel.py does to hide tint2 behind a
+            # fullscreen window. Waiting out the up-to-2s POLL_TINT2 gap
+            # left a real window where the old frame was already gone and
+            # the new one wasn't grabbed yet -- re-resolve immediately
+            # instead of waiting for the next poll to notice.
+            self.grab_panel()
             return
-        mode = X.ReplayPointer
+        # evtype lives on the GenericEvent wrapper itself; the rest (deviceid,
+        # detail, root_x/y, event, time, ...) is in its DictWrapper .data,
+        # which -- unlike a plain dict -- has no .get(): index it directly.
+        if ev.type != GENERIC_EVENT or getattr(ev, "extension", None) != self.xi_major:
+            return
+        if getattr(ev, "evtype", None) != xinput.ButtonPress:
+            return
+        data = ev.data
+        # deviceid first and outside the narrower checks below: whichever
+        # device this event came from is who XIAllowEvents must target, in
+        # every exit path, even one we bail out of early. 2 is the virtual
+        # core pointer XI2 reports on ordinary single-pointer setups --
+        # a fallback only, in case the field itself is somehow unreadable.
+        try:
+            deviceid = data["deviceid"]
+        except (KeyError, AttributeError):
+            deviceid = 2
+        mode = XI_REPLAY_DEVICE
         win = None
         try:
-            if ev.window.id not in self.grabbed_ids:
-                debug(f"on_event: ev.window {ev.window.id:#x} not in grabbed_ids {[(w if isinstance(w, int) else w) for w in self.grabbed_ids]!r}")
+            if data["detail"] != X.Button3:
                 return
-            px = int(getattr(ev, "root_x", 0))
-            py = int(getattr(ev, "root_y", 0))
+            event_win = data["event"]
+            # GrabModeSync freezes *this device's* events until
+            # XIAllowEvents. Always release it, even if hit-testing throws
+            # (the try/finally below covers everything past this point).
+            if event_win is None or event_win.id not in self.grabbed_ids:
+                seen = hex(event_win.id) if event_win is not None else None
+                debug(f"on_event: xi event window {seen} not in grabbed_ids {[hex(w) for w in self.grabbed_ids]!r}")
+                return
+            px = int(data["root_x"])
+            py = int(data["root_y"])
             win = self.task_at_pointer(px, py)
             hit = hex(win.id) if win else None
-            debug(f"on_event: click at ({px},{py}) -> {hit} out of {len(self.task_geom)} cached tasks")
+            debug(f"on_event: xi click at ({px},{py}) -> {hit} out of {len(self.task_geom)} cached tasks")
             if win is not None:
-                mode = X.AsyncPointer
+                mode = XI_ASYNC_DEVICE
         except (error.BadWindow, error.BadDrawable, error.BadAccess) as e:
             debug(f"on_event: exception {e!r}")
-            mode = X.ReplayPointer
+            mode = XI_REPLAY_DEVICE
             win = None
         finally:
-            self.allow(mode)
-        if win is not None:
+            self.xi_allow(deviceid, mode)
+            # xi_allow()'s flush() only sends our release; it doesn't wait
+            # for the server to have actually processed it. GTK's popup
+            # grab lives on GDK's own, separate X connection -- if that
+            # grab attempt reaches the server first, on real hardware
+            # timing (never reproduced with synthetic XTest clicks in
+            # testing), it can find the device still marked frozen and
+            # fail with no error we'd see, and the menu never appears.
+            # A real round trip on our own connection closes that race.
             try:
-                self.popup(win, getattr(ev, "time", 0))
-            except Exception:
+                self.d.sync()
+            except error.Error:
                 pass
+        if win is not None:
+            event_time = data["time"]
+
+            def show_popup(_win=win, _t=event_time):
+                try:
+                    self.popup(_win, _t)
+                except Exception as e:
+                    debug(f"on_event: popup() raised {e!r}")
+                return False
+
+            # A real 200ms delay, not just one main-loop tick: this runs
+            # on the button PRESS, and we get there fast enough that a
+            # real physical click is still actually held down at this
+            # point (confirmed live -- the menu opened but tracked the
+            # button as still down, needing it held to stay open, exactly
+            # what GTK's menu does when a button is genuinely down when
+            # it takes its own grab). A synthetic (XTest) click's
+            # press+release happens near instantly, well before we'd ever
+            # reach this line, which is why that case always looked fine
+            # regardless of delay. 200ms is well past any normal human
+            # click's press-to-release gap and still reads as instant.
+            GLib.timeout_add(200, show_popup)
 
 
 def main(argv):
@@ -528,9 +783,23 @@ def main(argv):
     d.set_error_handler(lambda *_a, **_k: None)
     g = Grabber(d)
     try:
-        d.screen().root.change_attributes(event_mask=X.PropertyChangeMask)
+        d.screen().root.change_attributes(
+            event_mask=X.PropertyChangeMask | X.SubstructureNotifyMask
+        )
     except error.Error:
         pass
+
+    # This script never has a real Gtk.Window of its own -- only ad hoc
+    # Gtk.Menu popups, realized on demand. Kept as a defensive fallback
+    # (the standard trick for headless GTK utilities that only ever show
+    # menus/tooltips) even though it turned out not to be the actual fix
+    # for the popup never showing on a real click -- Grabber.xi_allow's
+    # own comment has that story.
+    anchor = Gtk.Window(type=Gtk.WindowType.POPUP)
+    anchor.set_default_size(1, 1)
+    anchor.move(-100, -100)
+    anchor.show()
+    g.anchor = anchor
 
     def drain(_fd=None, _cond=None):
         try:
@@ -553,7 +822,12 @@ def main(argv):
 
     def release_sync_grab():
         # Safety valve if a ButtonPress was dropped without AllowEvents.
+        # Core call is belt-and-braces (nothing holds a core grab, see
+        # module docstring); deviceid 2 is the virtual core pointer XI2
+        # reports on ordinary single-pointer setups, matching what the
+        # real grab is established against (AllMasterDevices).
         g.allow(X.AsyncPointer)
+        g.xi_allow(2, XI_ASYNC_DEVICE)
         return True
 
     refresh()
