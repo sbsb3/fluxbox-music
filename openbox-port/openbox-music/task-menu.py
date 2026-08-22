@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
-"""Send To on tint2 task buttons, including titlebar-less DAWs (Renoise).
+"""Super+right-click Send To on tint2 task buttons (titlebar-less DAWs too).
 
-tint2 has no per-task context menu. Fluxbox's WindowMenu (with [sendto]) only
-opens from the titlebar, which Renoise / Bitwig / Max often do not have.
+tint2 has no per-task context menu. Openbox's own client-menu (with Send To)
+only opens from a titlebar, which Renoise / Bitwig / Max often do not have.
 
-Grab Button3 on the panel. When the click hits a task, show Send To plus
-min/max/close. Clicks that miss a task are replayed (launchers / clock / tray).
+Grab Mod4+Button3 (Windows+right-click) on the panel -- plain, unmodified
+Button3 is not ours to take: Openbox itself permanently holds a passive
+Button3/AnyModifier grab on every client window (including tint2, a dock)
+for click-to-focus, and X allows only one owner per exact button+modifier
+combo on a window. A grab for Mod4Mask specifically (plus its Lock/NumLock
+variants -- X tracks those as separate modifier states) does not overlap
+that reservation and is free for us to take, matching the Frame context's
+own W-Right bind in rc.xml for the same titlebar-less DAWs (see below).
+
+When the click hits a task, show Send To plus min/max/close. Clicks that
+miss a task are replayed (launchers / clock / tray).
 
 Plank overwrites _NET_WM_ICON_GEOMETRY with a 0x0 dock slot for pinned apps.
 Cache the last geometry that sat on the tint2 panel so those tasks still hit.
@@ -16,6 +25,13 @@ import os
 import signal
 import subprocess
 import sys
+
+DEBUG = os.environ.get("TASK_MENU_DEBUG") == "1"
+
+
+def debug(*args):
+    if DEBUG:
+        print(*args, file=sys.stderr, flush=True)
 
 import gi
 
@@ -28,7 +44,20 @@ POLL_TINT2 = 2.0
 ALL_DESKTOPS = 0xFFFFFFFF
 USR1_COOLDOWN = 15.0
 USR1_MAX_STRIKES = 2
-MIN_TASK_H = 32
+# Filters out Plank's clobbered 0x0 icon geometry for pinned apps (see
+# below) without rejecting real task geometry from the compact tint2
+# profile, whose 30px-tall panel (panel-size.sh) reports task icons
+# shorter than the 56px normal profile ever would.
+MIN_TASK_H = 16
+# Windows key, plus its Lock/NumLock variants -- X grabs are keyed on the
+# exact modifier state, so "Super regardless of lock keys" needs one grab
+# per combination rather than a single wildcard (see module docstring).
+GRAB_MODS = (
+    X.Mod4Mask,
+    X.Mod4Mask | X.LockMask,
+    X.Mod4Mask | X.Mod2Mask,
+    X.Mod4Mask | X.LockMask | X.Mod2Mask,
+)
 # fullscreen-panel.py touches this while it has tint2 unmapped for a
 # fullscreen window -- every task's icon geometry looks "missing" then, which
 # would otherwise read as exactly the fault this self-heal exists to catch.
@@ -206,27 +235,40 @@ class Grabber:
         for wid in list(self.grabbed_ids):
             try:
                 w = self.d.create_resource_object("window", wid)
-                w.ungrab_button(X.Button3, X.AnyModifier)
+                for mods in GRAB_MODS:
+                    w.ungrab_button(X.Button3, mods)
             except (error.BadWindow, error.BadDrawable, error.BadAccess):
                 pass
         self.grabbed_ids.clear()
 
     def _grab_win(self, win):
-        try:
-            win.grab_button(
-                X.Button3,
-                X.AnyModifier,
-                False,
-                X.ButtonPressMask,
-                X.GrabModeSync,
-                X.GrabModeAsync,
-                X.NONE,
-                X.NONE,
-            )
+        ok_count = 0
+        for mods in GRAB_MODS:
+            try:
+                grab_err = []
+                win.grab_button(
+                    X.Button3,
+                    mods,
+                    False,
+                    X.ButtonPressMask,
+                    X.GrabModeSync,
+                    X.GrabModeAsync,
+                    X.NONE,
+                    X.NONE,
+                    onerror=lambda err, req: grab_err.append(err),
+                )
+                self.d.sync()
+                if grab_err:
+                    debug(f"_grab_win: grab_button on {win.id:#x} mods={mods:#x} failed: {grab_err[0]!r}")
+                    continue
+                ok_count += 1
+            except (error.BadWindow, error.BadDrawable, error.BadAccess):
+                continue
+        debug(f"_grab_win: grab_button on {win.id:#x} succeeded for {ok_count}/{len(GRAB_MODS)} modifier combos")
+        if ok_count:
             self.grabbed_ids.add(win.id)
             return True
-        except (error.BadWindow, error.BadDrawable, error.BadAccess):
-            return False
+        return False
 
     def grab_panel(self):
         panel = find_tint2(self.d, self.atoms["list"])
@@ -459,13 +501,17 @@ class Grabber:
         win = None
         try:
             if ev.window.id not in self.grabbed_ids:
+                debug(f"on_event: ev.window {ev.window.id:#x} not in grabbed_ids {[(w if isinstance(w, int) else w) for w in self.grabbed_ids]!r}")
                 return
             px = int(getattr(ev, "root_x", 0))
             py = int(getattr(ev, "root_y", 0))
             win = self.task_at_pointer(px, py)
+            hit = hex(win.id) if win else None
+            debug(f"on_event: click at ({px},{py}) -> {hit} out of {len(self.task_geom)} cached tasks")
             if win is not None:
                 mode = X.AsyncPointer
-        except (error.BadWindow, error.BadDrawable, error.BadAccess):
+        except (error.BadWindow, error.BadDrawable, error.BadAccess) as e:
+            debug(f"on_event: exception {e!r}")
             mode = X.ReplayPointer
             win = None
         finally:

@@ -20,6 +20,13 @@ obdir="${HOME}/.openbox-music"
 export XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-Openbox}"
 export GDK_BACKEND=x11
 export QT_QPA_PLATFORM=xcb
+# Without this, Qt apps (CopyQ, QOwnNotes, ...) have no platform theme
+# plugin at all in this session -- ~/.config/environment.d/gtk-theme.conf
+# sets this too, but that's a systemd --user env generator and never
+# reaches processes openbox-autostart itself spawns. gtk3 makes Qt pull
+# its palette from the GTK_THEME/settings.ini above instead of Qt's
+# built-in light default.
+export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-gtk3}"
 export GTK_THEME="${GTK_THEME:-Adwaita-dark}"
 export GTK_ICON_THEME_NAME="${GTK_ICON_THEME_NAME:-Adwaita-Red}"
 export XCURSOR_THEME="${XCURSOR_THEME:-Adwaita}"

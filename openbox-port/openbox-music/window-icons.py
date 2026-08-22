@@ -2,9 +2,12 @@
 """Stamp desktop-launcher icons onto windows that never publish one.
 
 tint2 tasks use _NET_WM_ICON / WMHints. SunVox and Bitwig leave those empty,
-so the panel falls back to its generic document placeholder. Desktop and
-Plank already resolve Icon= from the .desktop file. Copy that PNG onto the
-client window so the task button matches the launcher.
+so the panel falls back to its generic document placeholder. Legcord instead
+publishes a real _NET_WM_ICON, but it's the same generic blank-window
+placeholder Electron ships when packaging skipped the real app icon -- same
+symptom, different cause, so it needs the same treatment. Desktop and Plank
+already resolve Icon= from the .desktop file. Copy that PNG onto the client
+window so the task button matches the launcher.
 
 Bitwig's WM_CLASS is a single string (not instance+class), so XGetClassHint
 returns None; the raw property is what we match.
@@ -33,6 +36,10 @@ ICONS = {
     "com.bitwig.bitwigstudio": (
         "bitwig.png",
         "/usr/share/icons/hicolor/48x48/apps/com.bitwig.BitwigStudio.png",
+    ),
+    "legcord": (
+        "legcord.png",
+        "/usr/share/icons/hicolor/512x512/apps/legcord.png",
     ),
 }
 
