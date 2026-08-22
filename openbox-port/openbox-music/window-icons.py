@@ -93,14 +93,6 @@ def icon_for(tokens):
     return None, None
 
 
-def has_net_icon(win, atom_icon):
-    try:
-        prop = win.get_full_property(atom_icon, X.AnyPropertyType)
-    except (error.BadWindow, error.BadDrawable, error.BadAtom):
-        return False
-    return bool(prop) and len(prop.value) >= 4
-
-
 def iter_clients(d, atom_list):
     root = d.screen().root
     try:
@@ -171,9 +163,12 @@ def apply_window(d, win, atom_class, atom_icon, applied):
         return
     wid = win.id
     stamp = (key, str(path), path.stat().st_mtime)
-    if has_net_icon(win, atom_icon):
-        applied[wid] = stamp
-        return
+    # Bitwig and SunVox don't skip _NET_WM_ICON -- they publish their own
+    # generic placeholder a moment after mapping (sometimes not until well
+    # after the window is on the taskbar), silently clobbering whatever we
+    # stamped first. A one-time "does it already have an icon?" check loses
+    # that race, so keep re-asserting ours on every pass instead of trusting
+    # a property read to mean the app's icon is good.
     ok = set_icon_property(d, win, atom_icon, path)
     if not ok:
         ok = set_icon_xseticon(win, path)
