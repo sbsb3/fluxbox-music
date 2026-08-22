@@ -617,6 +617,17 @@ class Grabber:
                 except (error.BadWindow, error.BadDrawable):
                     pass
             return
+        if ev.type in (X.CreateNotify, X.DestroyNotify, X.ReparentNotify, X.UnmapNotify, X.MapNotify):
+            # Openbox destroys and recreates tint2's invisible frame (the
+            # window our XI2 grab actually lives on -- see module
+            # docstring) on its own schedule, not ours: e.g. every unmap/
+            # remap cycle fullscreen-panel.py does to hide tint2 behind a
+            # fullscreen window. Waiting out the up-to-2s POLL_TINT2 gap
+            # left a real window where the old frame was already gone and
+            # the new one wasn't grabbed yet -- re-resolve immediately
+            # instead of waiting for the next poll to notice.
+            self.grab_panel()
+            return
         # evtype lives on the GenericEvent wrapper itself; the rest (deviceid,
         # detail, root_x/y, event, time, ...) is in its DictWrapper .data,
         # which -- unlike a plain dict -- has no .get(): index it directly.
@@ -685,7 +696,9 @@ def main(argv):
     d.set_error_handler(lambda *_a, **_k: None)
     g = Grabber(d)
     try:
-        d.screen().root.change_attributes(event_mask=X.PropertyChangeMask)
+        d.screen().root.change_attributes(
+            event_mask=X.PropertyChangeMask | X.SubstructureNotifyMask
+        )
     except error.Error:
         pass
 
