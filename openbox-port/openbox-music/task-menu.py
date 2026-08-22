@@ -4,14 +4,24 @@
 tint2 has no per-task context menu. Openbox's own client-menu (with Send To)
 only opens from a titlebar, which Renoise / Bitwig / Max often do not have.
 
-Grab Mod4+Button3 (Windows+right-click) on the panel -- plain, unmodified
-Button3 is not ours to take: Openbox itself permanently holds a passive
-Button3/AnyModifier grab on every client window (including tint2, a dock)
-for click-to-focus, and X allows only one owner per exact button+modifier
-combo on a window. A grab for Mod4Mask specifically (plus its Lock/NumLock
-variants -- X tracks those as separate modifier states) does not overlap
-that reservation and is free for us to take, matching the Frame context's
-own W-Right bind in rc.xml for the same titlebar-less DAWs (see below).
+Core-protocol XGrabButton is not usable here, on ANY button+modifier combo:
+the window that actually receives clicks is not tint2's own window at all,
+but an invisible frame Openbox creates in front of every top-level window it
+manages (docks included) -- and Openbox itself permanently holds passive
+grabs there: plain Button3/AnyModifier for click-to-focus, and Mod4+Button3
+for the Frame context's own "W-Right -> client-menu" bind (rc.xml, the same
+one that gives titlebar-less DAWs their Send To menu). X allows only one
+owner per exact button+modifier combo per window, so neither is ours to
+take.
+
+XInput2 passive grabs (XIGrabButton) are a separate grab table from core
+XGrabButton, so Mod4+Button3 there does NOT conflict with Openbox's core
+grab of the same nominal combo -- confirmed live via a raw protocol probe.
+Use that instead: grab Mod4+Button3 (Windows+right-click) via XI2 on the
+frame window in front of tint2, GrabModeSync, and release every captured
+event with XIAllowEvents (hand-rolled: python-xlib wraps the rest of XI2's
+passive-grab requests but not this one) -- Async to consume a hit, Replay
+to let a miss fall through as before.
 
 When the click hits a task, show Send To plus min/max/close. Clicks that
 miss a task are replayed (launchers / clock / tray).
@@ -39,6 +49,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk
 
 from Xlib import X, display, error
+from Xlib.ext import xinput
+from Xlib.protocol import rq
 
 POLL_TINT2 = 2.0
 ALL_DESKTOPS = 0xFFFFFFFF
@@ -58,6 +70,39 @@ GRAB_MODS = (
     X.Mod4Mask | X.Mod2Mask,
     X.Mod4Mask | X.LockMask | X.Mod2Mask,
 )
+# XI2 GenericEvent core type, and the XI_ButtonPress sub-type carried in its
+# extension payload -- separate namespaces (X.ButtonPress is the core event).
+GENERIC_EVENT = 35
+# XIAllowEvents event_mode values (XI2 protocol; not core AllowEvents' modes).
+XI_ASYNC_DEVICE = 0
+XI_REPLAY_DEVICE = 2
+
+
+class XIAllowEvents(rq.Request):
+    """Hand-rolled: python-xlib's xinput module wraps XIPassiveGrabDevice
+    and friends but not this one. Wire format per the XI2 protocol spec,
+    request minor-opcode 53 (the gap between XIUngrabDevice=52 and
+    XIPassiveGrabDevice=54 in Xlib/ext/xinput.py)."""
+
+    _request = rq.Struct(
+        rq.Card8("opcode"),
+        rq.Opcode(53),
+        rq.RequestLength(),
+        rq.Card32("time"),
+        rq.Card16("deviceid"),
+        rq.Card8("event_mode"),
+        rq.Pad(1),
+    )
+
+
+def xi_allow_events(d, xi_major, deviceid, event_mode):
+    XIAllowEvents(
+        display=d.display,
+        opcode=xi_major,
+        time=X.CurrentTime,
+        deviceid=deviceid,
+        event_mode=event_mode,
+    )
 # fullscreen-panel.py touches this while it has tint2 unmapped for a
 # fullscreen window -- every task's icon geometry looks "missing" then, which
 # would otherwise read as exactly the fault this self-heal exists to catch.
@@ -160,6 +205,39 @@ def find_tint2(d, atom_list):
     return None
 
 
+def find_frame(d, panel):
+    """The window that actually receives clicks over tint2: an invisible,
+    class-less, same-geometry sibling Openbox creates in front of every
+    top-level window it manages, docks included (see module docstring).
+    It is a plain child of root, not of tint2 -- found by matching absolute
+    geometry among root's other children, not by walking tint2's own tree.
+    """
+    if panel is None:
+        return None
+    root = d.screen().root
+    try:
+        g = panel.get_geometry()
+        t = root.translate_coords(panel, 0, 0)
+    except (error.BadWindow, error.BadDrawable):
+        return None
+    target = (t.x, t.y, g.width, g.height)
+    try:
+        children = root.query_tree().children
+    except (error.BadWindow, error.BadDrawable):
+        return None
+    for c in children:
+        if c.id == panel.id:
+            continue
+        try:
+            cg = c.get_geometry()
+            ct = root.translate_coords(c, 0, 0)
+        except (error.BadWindow, error.BadDrawable):
+            continue
+        if (ct.x, ct.y, cg.width, cg.height) == target:
+            return c
+    return None
+
+
 def atom_list_has(win, atom, wanted):
     try:
         prop = win.get_full_property(atom, X.AnyPropertyType)
@@ -221,6 +299,7 @@ class Grabber:
             "skip": intern(d, "_NET_WM_STATE_SKIP_TASKBAR"),
         }
         self.panel = None
+        self.xi_major = d.query_extension("XInputExtension").major_opcode
         self.grabbed_ids = set()
         self.task_geom = {}
         self.watching = set()
@@ -235,36 +314,39 @@ class Grabber:
         for wid in list(self.grabbed_ids):
             try:
                 w = self.d.create_resource_object("window", wid)
-                for mods in GRAB_MODS:
-                    w.ungrab_button(X.Button3, mods)
+                # Free-function call, self passed explicitly: python-xlib's
+                # xinput module defines this but never registers it as a
+                # bound Window method (unlike e.g. xinput_grab_keycode).
+                xinput.passive_ungrab_device(
+                    w, xinput.AllMasterDevices, X.Button3, xinput.GrabtypeButton, list(GRAB_MODS)
+                )
             except (error.BadWindow, error.BadDrawable, error.BadAccess):
                 pass
         self.grabbed_ids.clear()
 
     def _grab_win(self, win):
-        ok_count = 0
-        for mods in GRAB_MODS:
-            try:
-                grab_err = []
-                win.grab_button(
-                    X.Button3,
-                    mods,
-                    False,
-                    X.ButtonPressMask,
-                    X.GrabModeSync,
-                    X.GrabModeAsync,
-                    X.NONE,
-                    X.NONE,
-                    onerror=lambda err, req: grab_err.append(err),
-                )
-                self.d.sync()
-                if grab_err:
-                    debug(f"_grab_win: grab_button on {win.id:#x} mods={mods:#x} failed: {grab_err[0]!r}")
-                    continue
-                ok_count += 1
-            except (error.BadWindow, error.BadDrawable, error.BadAccess):
-                continue
-        debug(f"_grab_win: grab_button on {win.id:#x} succeeded for {ok_count}/{len(GRAB_MODS)} modifier combos")
+        try:
+            reply = xinput.passive_grab_device(
+                win,
+                xinput.AllMasterDevices,
+                X.CurrentTime,
+                X.Button3,
+                xinput.GrabtypeButton,
+                X.GrabModeSync,
+                X.GrabModeAsync,
+                False,
+                xinput.ButtonPressMask,
+                list(GRAB_MODS),
+            )
+        except (error.BadWindow, error.BadDrawable, error.BadAccess) as e:
+            debug(f"_grab_win: XI2 grab on {win.id:#x} raised {e!r}")
+            return False
+        # The reply lists only the modifier combos that FAILED; empty means
+        # every one of GRAB_MODS was granted.
+        failed = list(reply.modifiers)
+        ok_count = len(GRAB_MODS) - len(failed)
+        debug(f"_grab_win: XI2 grab_button on {win.id:#x} succeeded for {ok_count}/{len(GRAB_MODS)} modifier combos"
+              + (f", failed={[hex(m) for m in failed]}" if failed else ""))
         if ok_count:
             self.grabbed_ids.add(win.id)
             return True
@@ -276,11 +358,18 @@ class Grabber:
             self._ungrab()
             self.panel = None
             return
-        if panel.id not in self.grabbed_ids:
-            self._ungrab()
-            self._grab_win(panel)
-            self.d.sync()
         self.panel = panel
+        # Not panel itself: the window that actually receives clicks is an
+        # invisible Openbox-created frame sitting in front of it (module
+        # docstring). Re-resolve every call -- tint2 restarts get a new
+        # frame too, and the old frame's grab dies with its window anyway.
+        frame = find_frame(self.d, panel)
+        if frame is None:
+            self._ungrab()
+            return
+        if frame.id not in self.grabbed_ids:
+            self._ungrab()
+            self._grab_win(frame)
 
     def watch_clients(self):
         live = set()
@@ -475,8 +564,19 @@ class Grabber:
         menu.popup(None, None, None, None, 3, t)
 
     def allow(self, mode):
+        # Core AllowEvents. Nothing holds a core grab anymore (see module
+        # docstring), so this is now only the safety-valve's belt-and-braces
+        # call in main() -- harmless no-op if the server has nothing of
+        # ours to release.
         try:
             self.d.allow_events(mode, X.CurrentTime)
+            self.d.flush()
+        except error.Error:
+            pass
+
+    def xi_allow(self, deviceid, mode):
+        try:
+            xi_allow_events(self.d, self.xi_major, deviceid, mode)
             self.d.flush()
         except error.Error:
             pass
@@ -493,34 +593,54 @@ class Grabber:
                 except (error.BadWindow, error.BadDrawable):
                     pass
             return
-        # GrabModeSync freezes *all* pointer delivery until AllowEvents.
-        # Always release the sync grab, even if hit-testing throws.
-        if ev.type != X.ButtonPress or getattr(ev, "detail", None) != X.Button3:
+        # evtype lives on the GenericEvent wrapper itself; the rest (deviceid,
+        # detail, root_x/y, event, time, ...) is in its DictWrapper .data,
+        # which -- unlike a plain dict -- has no .get(): index it directly.
+        if ev.type != GENERIC_EVENT or getattr(ev, "extension", None) != self.xi_major:
             return
-        mode = X.ReplayPointer
+        if getattr(ev, "evtype", None) != xinput.ButtonPress:
+            return
+        data = ev.data
+        # deviceid first and outside the narrower checks below: whichever
+        # device this event came from is who XIAllowEvents must target, in
+        # every exit path, even one we bail out of early. 2 is the virtual
+        # core pointer XI2 reports on ordinary single-pointer setups --
+        # a fallback only, in case the field itself is somehow unreadable.
+        try:
+            deviceid = data["deviceid"]
+        except (KeyError, AttributeError):
+            deviceid = 2
+        mode = XI_REPLAY_DEVICE
         win = None
         try:
-            if ev.window.id not in self.grabbed_ids:
-                debug(f"on_event: ev.window {ev.window.id:#x} not in grabbed_ids {[(w if isinstance(w, int) else w) for w in self.grabbed_ids]!r}")
+            if data["detail"] != X.Button3:
                 return
-            px = int(getattr(ev, "root_x", 0))
-            py = int(getattr(ev, "root_y", 0))
+            event_win = data["event"]
+            # GrabModeSync freezes *this device's* events until
+            # XIAllowEvents. Always release it, even if hit-testing throws
+            # (the try/finally below covers everything past this point).
+            if event_win is None or event_win.id not in self.grabbed_ids:
+                seen = hex(event_win.id) if event_win is not None else None
+                debug(f"on_event: xi event window {seen} not in grabbed_ids {[hex(w) for w in self.grabbed_ids]!r}")
+                return
+            px = int(data["root_x"])
+            py = int(data["root_y"])
             win = self.task_at_pointer(px, py)
             hit = hex(win.id) if win else None
-            debug(f"on_event: click at ({px},{py}) -> {hit} out of {len(self.task_geom)} cached tasks")
+            debug(f"on_event: xi click at ({px},{py}) -> {hit} out of {len(self.task_geom)} cached tasks")
             if win is not None:
-                mode = X.AsyncPointer
+                mode = XI_ASYNC_DEVICE
         except (error.BadWindow, error.BadDrawable, error.BadAccess) as e:
             debug(f"on_event: exception {e!r}")
-            mode = X.ReplayPointer
+            mode = XI_REPLAY_DEVICE
             win = None
         finally:
-            self.allow(mode)
+            self.xi_allow(deviceid, mode)
         if win is not None:
             try:
-                self.popup(win, getattr(ev, "time", 0))
-            except Exception:
-                pass
+                self.popup(win, data["time"])
+            except Exception as e:
+                debug(f"on_event: popup() raised {e!r}")
 
 
 def main(argv):
@@ -553,7 +673,12 @@ def main(argv):
 
     def release_sync_grab():
         # Safety valve if a ButtonPress was dropped without AllowEvents.
+        # Core call is belt-and-braces (nothing holds a core grab, see
+        # module docstring); deviceid 2 is the virtual core pointer XI2
+        # reports on ordinary single-pointer setups, matching what the
+        # real grab is established against (AllMasterDevices).
         g.allow(X.AsyncPointer)
+        g.xi_allow(2, XI_ASYNC_DEVICE)
         return True
 
     refresh()
