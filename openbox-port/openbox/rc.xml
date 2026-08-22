@@ -42,7 +42,7 @@
 </placement>
 
 <theme>
-  <name>Clearlooks</name>
+  <name>ClearlooksDarkMenu</name>
   <titleLayout>NLIMC</titleLayout>
   <keepBorder>yes</keepBorder>
   <animateIconify>yes</animateIconify>
@@ -181,8 +181,7 @@
   <context name="Desktop">
     <mousebind button="Right" action="Press"><action name="ShowMenu"><menu>root-menu</menu></action></mousebind>
     <mousebind button="Middle" action="Press"><action name="ShowMenu"><menu>workspace-menu</menu></action></mousebind>
-    <mousebind button="Up" action="Click"><action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action></mousebind>
-    <mousebind button="Down" action="Click"><action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action></mousebind>
+    <!-- Scroll-to-switch-workspace on empty desktop disabled per user request. -->
   </context>
 
   <!-- OnToolbar Mouse4/5 (Fluxbox's own toolbar) has no equivalent: tint2 is
