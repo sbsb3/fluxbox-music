@@ -175,7 +175,11 @@ if have plank; then
 fi
 
 if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${obdir}/fullscreen-panel.py" ]; then
-    "${obdir}/fullscreen-panel.py" &
+    # Diagnosing an intermittent panel flicker (hide/restore vs. task-menu.py's
+    # SIGUSR1 self-heal vs. an actual tint2/openbox crash) is guesswork without
+    # a trail -- keep a small rotating log of this script's own hide/restore
+    # decisions so the next flicker has one.
+    FULLSCREEN_PANEL_LOG="/tmp/fullscreen-panel-openbox.log" "${obdir}/fullscreen-panel.py" &
 fi
 
 if have dunst; then

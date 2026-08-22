@@ -341,6 +341,18 @@
     <decor>no</decor>
     <layer>above</layer>
   </application>
+  <!-- SunVox saves its own "maximized" state in sunvox_config.ini (width/
+       height, no x/y) and positions itself directly rather than asking the
+       WM for a real EWMH maximize, so it always lands at the screen's raw
+       top-left, under tint2's 30px strip. Force it down past the panel
+       on every map; Smart placement never gets a say because SunVox already
+       requests its own position. -->
+  <application class="sunvox">
+    <position force="yes">
+      <x>0</x>
+      <y>32</y>
+    </position>
+  </application>
 </applications>
 
 </openbox_config>
