@@ -27,6 +27,18 @@
   [Close] {no}
 [end]
 
+# Renoise (and its sandboxed plugin UIs) must stay on Normal.
+# AboveDock (layer 2) was a workaround for Plank's oversized Fluxbox frame
+# covering the bottom of maximized DAWs; plank-input-shape.py fixes the
+# input shape properly, so Renoise no longer needs to sit above the dock
+# (and therefore above every other window).
+[app] (class=Renoise)
+  [Layer] {8}
+[end]
+[app] (class=Renoise Plugin Server)
+  [Layer] {8}
+[end]
+
 # Winamp-skin Audacious: three separate windows, no Fluxbox chrome.
 # Positions are restored by audacious-stack.py (transients otherwise land
 # on top of the player after a Fluxbox restart or resume).
