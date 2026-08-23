@@ -190,6 +190,29 @@ if have tint2; then
     fi
     tint2 -c "$tint_rc" &
     place_tint2 &
+    # tint2 has a real, reproducible crash (SIGSEGV, systray-related --
+    # coredumps show the same instruction offset both times it happened)
+    # and nothing here relaunches it. Left alone it stays dead until
+    # task-menu.py's unrelated SIGUSR1 self-heal happens to notice and kick
+    # it, which is not what that self-heal is for and can take a while.
+    # Poll rather than watch a pid directly so panel-size.sh's own
+    # deliberate kill+relaunch (toggling normal/compact) is never mistaken
+    # for a crash -- confirm tint2 has been gone for a full second, past
+    # that script's own ~0.35s gap, before treating it as one.
+    if [ -x "${obdir}/panel-size.sh" ]; then
+        (
+            while :; do
+                while pgrep -x tint2 >/dev/null 2>&1; do
+                    sleep 1
+                done
+                sleep 1
+                pgrep -x tint2 >/dev/null 2>&1 && continue
+                echo "tint2: not running, restarting via panel-size.sh" >>/tmp/tint2-openbox.log
+                cur=$("${obdir}/panel-size.sh" show 2>/dev/null) || cur=normal
+                "${obdir}/panel-size.sh" "$cur" >>/tmp/tint2-openbox.log 2>&1
+            done
+        ) &
+    fi
 fi
 # Right-click on tint2 task buttons: Move to workspace / min / max / close.
 if python3 -c "import Xlib, gi" >/dev/null 2>&1 && [ -x "${obdir}/task-menu.py" ]; then
