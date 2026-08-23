@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ~/.config/openbox-renoise/rc.xml -->
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+
+  <!-- New windows open on the RandR primary monitor (DP-4) -->
+  <placement>
+    <position>center</position>
+    <monitor>Primary</monitor>
+  </placement>
+
+  <!-- No keyboard bindings: no Alt-Tab, no root menu, no escape hatch -->
+  <keyboard/>
+
+  <mouse>
+    <dragThreshold>8</dragThreshold>
+
+    <!-- Drag plugin windows by their titlebars, e.g. onto the portrait monitor -->
+    <context name="Titlebar">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Drag">
+        <action name="Move"/>
+      </mousebind>
+    </context>
+
+    <context name="Close">
+      <mousebind button="Left" action="Click">
+        <action name="Close"/>
+      </mousebind>
+    </context>
+
+    <!-- Click to focus; Alt-drag as fallback move/resize for any window -->
+    <context name="Client">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="A-Left" action="Drag">
+        <action name="Move"/>
+      </mousebind>
+      <mousebind button="A-Right" action="Drag">
+        <action name="Resize"/>
+      </mousebind>
+    </context>
+  </mouse>
+
+  <applications>
+    <!-- Renoise main window: fullscreen, undecorated, forced onto DP-4 (Openbox monitor 2
+         with HDMI-0 off). force="yes" overrides Renoise's saved window geometry,
+         which otherwise maps onto the portrait DP-2 and fullscreens clipped there. -->
+    <application class="Renoise" type="normal">
+      <decor>no</decor>
+      <fullscreen>yes</fullscreen>
+      <position force="yes">
+        <x>0</x>
+        <y>0</y>
+        <monitor>2</monitor>
+      </position>
+    </application>
+
+    <!-- Plugin editors and dialogs: floating, decorated, draggable -->
+    <application name="*" type="dialog">
+      <decor>yes</decor>
+      <fullscreen>no</fullscreen>
+    </application>
+    <application name="*" type="utility">
+      <decor>yes</decor>
+      <fullscreen>no</fullscreen>
+    </application>
+  </applications>
+
+</openbox_config>

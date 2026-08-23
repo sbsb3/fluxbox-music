@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Renoise Kiosk (X11)
+Comment=Renoise fullscreen on primary, portrait monitor for plugin windows
+Exec=/usr/local/bin/renoise-kiosk
+TryExec=/usr/local/bin/renoise-kiosk
+Type=Application
