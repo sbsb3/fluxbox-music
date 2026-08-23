@@ -9,6 +9,10 @@
 # missing HDMI/DPI/Plank/picom/tint2. Putting the setup here instead makes
 # it unconditional for generic Openbox logins. The dedicated Openbox Music
 # session starts the stack itself, so this hook must stand down for it.
+# The Renoise kiosk session (renoise-kiosk.sh) is the same story: it also
+# runs plain `openbox --config-file ...`, so this hook fires there too and
+# was clobbering the kiosk's own xrandr layout (via autorandr --change
+# --default) and relaunching tint2 after the kiosk had already killed it.
 #
 # IMPORTANT: unlike ~/.openbox-music/startup, this file must NOT launch
 # Openbox itself (it's already running) and must NOT block with `wait` --
@@ -16,7 +20,7 @@
 # autostart (gajim, arch-update-tray, etc.), so everything long-running
 # here backgrounds itself and returns.
 
-if [ "${OPENBOX_MUSIC_SESSION:-}" = "1" ]; then
+if [ "${OPENBOX_MUSIC_SESSION:-}" = "1" ] || [ "${OPENBOX_RENOISE_KIOSK:-}" = "1" ]; then
     exit 0
 fi
 
