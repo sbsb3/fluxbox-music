@@ -8,6 +8,13 @@
 
 obdir="${HOME}/.openbox-music"
 
+# Openbox always runs ~/.config/openbox/autostart after it starts. This
+# dedicated session already starts that same music stack below, so mark the
+# child Openbox process and let the generic autostart hook stand down. Without
+# this, both paths create overlapping tint2 windows; task-menu.py can grab only
+# one of their Openbox input frames.
+export OPENBOX_MUSIC_SESSION=1
+
 export XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-Openbox}"
 export GDK_BACKEND=x11
 export QT_QPA_PLATFORM=xcb
