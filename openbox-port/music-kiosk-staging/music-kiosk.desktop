@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Music Kiosk (X11)
+Comment=Openbox + Plank (kiosk) with Renoise, Bitwig Studio, SunVox and Max 9
+Exec=/usr/local/bin/music-kiosk
+TryExec=/usr/local/bin/music-kiosk
+Type=Application

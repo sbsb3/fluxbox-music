@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ~/.config/openbox-music-kiosk/rc.xml -->
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+
+  <!-- New windows open on the RandR primary monitor (DP-4) -->
+  <placement>
+    <position>center</position>
+    <monitor>Primary</monitor>
+  </placement>
+
+  <!-- Keyboard is intentionally almost empty: this is a kiosk and Plank
+       (running apps show an indicator; clicking the icon raises/cycles
+       that app) is the app switcher, so no Alt-Tab. The single binding
+       C-A-End exits Openbox, which ends the session (music-kiosk.sh is
+       blocked on `wait $obpid`). renoise-kiosk ties session exit to
+       Renoise quitting; this multi-app session has no single owning app,
+       so an explicit exit binding is required. -->
+  <keyboard>
+    <keybind key="C-A-End">
+      <action name="Exit"/>
+    </keybind>
+  </keyboard>
+
+  <mouse>
+    <dragThreshold>8</dragThreshold>
+
+    <!-- Drag plugin windows by their titlebars, e.g. onto the portrait monitor -->
+    <context name="Titlebar">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Drag">
+        <action name="Move"/>
+      </mousebind>
+    </context>
+
+    <context name="Close">
+      <mousebind button="Left" action="Click">
+        <action name="Close"/>
+      </mousebind>
+    </context>
+
+    <!-- Click to focus; Alt-drag as fallback move/resize for any window -->
+    <context name="Client">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="A-Left" action="Drag">
+        <action name="Move"/>
+      </mousebind>
+      <mousebind button="A-Right" action="Drag">
+        <action name="Resize"/>
+      </mousebind>
+    </context>
+  </mouse>
+
+  <applications>
+    <!-- Plank: above layer so maximized/fullscreen DAWs cannot bury the
+         dock; undecorated; on all desktops. Mirrors the openbox-music
+         rc.xml rule (gap #1). Plank windows are type=dock, so the DAW
+         fullscreen rules below don't catch the dock. -->
+    <application class="Plank">
+      <layer>above</layer>
+      <decor>no</decor>
+      <skip_taskbar>yes</skip_taskbar>
+      <skip_pager>yes</skip_pager>
+      <desktop>all</desktop>
+    </application>
+
+    <!-- Each DAW: fullscreen, undecorated, forced onto DP-4 (primary).
+         force="yes" overrides the app's saved geometry, which otherwise
+         maps onto the portrait DP-2 and fullscreens clipped there
+         (Renoise is the known case; the others get the same treatment
+         for a consistent kiosk). No <monitor> index here on purpose:
+         per-app <position><monitor> takes a raw 0-based RandR index whose
+         numbering vs. DP-4/DP-2 was never confirmed (see renoise-staging
+         rc.xml for the same reasoning); x/y=0x0 is unambiguous: it sits
+         strictly inside DP-4's rectangle (DP-2 occupies negative x), so
+         Openbox finds DP-4 from the point alone.
+
+         WM_CLASS class fields: Renoise and sunvox are confirmed live
+         (sunvox is lowercase). Bitwig's comes from its .desktop
+         StartupWMClass=com.bitwig.BitwigStudio. Max 9 is a Wine app; its
+         .desktop StartupWMClass=max.exe; Wine typically sets WM_CLASS
+         to the .exe name, so class="max.exe" is the best guess; if a
+         launched Max window does not go fullscreen, run
+           xprop WM_CLASS | grep -i max
+         on it and correct the class below. -->
+    <application class="Renoise" type="normal">
+      <decor>no</decor>
+      <fullscreen>yes</fullscreen>
+      <position force="yes">
+        <x>0</x>
+        <y>0</y>
+      </position>
+    </application>
+    <application class="com.bitwig.BitwigStudio" type="normal">
+      <decor>no</decor>
+      <fullscreen>yes</fullscreen>
+      <position force="yes">
+        <x>0</x>
+        <y>0</y>
+      </position>
+    </application>
+    <application class="sunvox" type="normal">
+      <decor>no</decor>
+      <fullscreen>yes</fullscreen>
+      <position force="yes">
+        <x>0</x>
+        <y>0</y>
+      </position>
+    </application>
+    <application class="max.exe" type="normal">
+      <decor>no</decor>
+      <fullscreen>yes</fullscreen>
+      <position force="yes">
+        <x>0</x>
+        <y>0</y>
+      </position>
+    </application>
+
+    <!-- Plugin editors and dialogs: floating, decorated, draggable -->
+    <application name="*" type="dialog">
+      <decor>yes</decor>
+      <fullscreen>no</fullscreen>
+    </application>
+    <application name="*" type="utility">
+      <decor>yes</decor>
+      <fullscreen>no</fullscreen>
+    </application>
+  </applications>
+
+</openbox_config>
