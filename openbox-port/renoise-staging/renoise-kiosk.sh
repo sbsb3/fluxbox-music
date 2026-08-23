@@ -12,14 +12,23 @@ xsetroot -solid black   # requires xorg-xsetroot
 
 pkill -x tint2 || true
 
-# Tell ~/.config/openbox/autostart to stand down: it runs unconditionally
-# whenever plain `openbox` starts (see that file's own comment), and left
-# unguarded it re-runs `autorandr --change --default` a moment after the
-# xrandr call below, replacing this 2-monitor layout with the saved 3-monitor
-# one (HDMI-0 back on, DP-4/DP-2 moved) -- which is what was dragging Renoise
-# back onto the portrait screen -- and relaunches tint2 right after the
-# pkill above.
+# Belt-and-suspenders: if ~/.config/openbox/autostart ever does run under
+# this session (it shouldn't for a plain `openbox --config-file` process --
+# verified directly, this is not firing today), this tells it to stand down
+# rather than fight the layout/tint2 below. See that file's own guard.
 export OPENBOX_RENOISE_KIOSK=1
+
+# The actual culprit for Renoise landing on the wrong monitor: a system udev
+# rule (/usr/lib/udev/rules.d/40-monitor-hotplug.rules) restarts
+# autorandr.service on every DRM "change" event, and the xrandr call below
+# is exactly such an event. Left alone, autorandr.service reapplies the
+# saved 3-monitor "default" profile (HDMI-0 back on, DP-4/DP-2 moved) a
+# moment later -- while Renoise is still loading its scripting tools, well
+# before it reaches window placement -- undoing this layout out from under
+# it. Mask it for the duration; restored after Renoise exits below. Needs
+# the sudoers rule in renoise-kiosk.sudoers (see deploy.sh) so this doesn't
+# block on a password with no terminal around to answer one.
+sudo systemctl mask --now autorandr.service 2>/dev/null || true
 
 # Layout: DP-4 primary landscape at 0x0, DP-2 portrait to its left, HDMI-0 off.
 # A fresh X server forgets your XFCE layout, so rotation and positions must be
@@ -34,4 +43,9 @@ xrandr --output DP-4 --mode 1920x1080 --primary --pos 0x0 \
 
 openbox --config-file "$HOME/.config/openbox-renoise/rc.xml" &
 
-exec renoise
+# Not exec'd: Renoise needs to actually return here so autorandr.service can
+# be restored below for normal (XFCE) use afterward.
+renoise
+
+sudo systemctl unmask autorandr.service 2>/dev/null || true
+sudo systemctl start --no-block autorandr.service 2>/dev/null || true

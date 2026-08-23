@@ -1,0 +1,16 @@
+# /etc/sudoers.d/renoise-kiosk
+#
+# Lets renoise-kiosk.sh neutralize autorandr.service for the duration of the
+# kiosk session without blocking on a password (the kiosk has no terminal to
+# answer one). See renoise-kiosk.sh for why: a system-wide udev rule
+# (/usr/lib/udev/rules.d/40-monitor-hotplug.rules) restarts autorandr.service
+# on every DRM "change" event, and the kiosk's own xrandr call is exactly
+# such an event -- autorandr.service would otherwise reapply the saved
+# 3-monitor "default" profile moments later, undoing the kiosk layout before
+# Renoise even finishes loading.
+#
+# Install with: sudo install -m 440 renoise-kiosk.sudoers /etc/sudoers.d/renoise-kiosk
+# (deploy.sh does this for you, validating with visudo -c first.)
+sb ALL=(root) NOPASSWD: /usr/bin/systemctl mask --now autorandr.service
+sb ALL=(root) NOPASSWD: /usr/bin/systemctl unmask autorandr.service
+sb ALL=(root) NOPASSWD: /usr/bin/systemctl start autorandr.service
