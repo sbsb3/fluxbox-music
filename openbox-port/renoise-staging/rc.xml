@@ -52,7 +52,7 @@
          otherwise maps onto the portrait DP-2 and fullscreens clipped there.
          No <monitor> index here on purpose: per-app <position><monitor> takes
          a raw numeric RandR monitor index (0-based per its docs), and its
-         numbering vs. DP-4/DP-2 was never actually confirmed -- "2" was a
+          numbering vs. DP-4/DP-2 was never actually confirmed; "2" was a
          guess and is exactly the kind of off-by-one that would silently
          clamp onto DP-2 instead. x/y alone are unambiguous: 0x0 sits
          strictly inside DP-4's rectangle in the kiosk's xrandr layout (DP-2

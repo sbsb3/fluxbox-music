@@ -6,11 +6,58 @@ log=/tmp/renoise-kiosk.log
 exec >>"$log" 2>&1
 set -x
 
+# --- Environment: match the music sessions so Renoise and plugin UIs
+# render at the right size and find their VST/LV2 paths.  LightDM's
+# /etc/lightdm/Xsession wrapper loads ~/.Xresources for every session,
+# but that file has no Xft.dpi -- only the fluxbox/openbox-music startup
+# scripts merge Xft.dpi:96 from their own Xresources.  Without it here,
+# X computes DPI from the multi-monitor virtual screen's physical size
+# and everything comes out way too large.
+export XDG_CURRENT_DESKTOP=Openbox
+export GDK_BACKEND=x11
+export QT_QPA_PLATFORM=xcb
+export GTK_THEME=Adwaita-dark
+export XCURSOR_THEME=Adwaita
+export XCURSOR_SIZE=24
+export GDK_SCALE=1
+export QT_AUTO_SCREEN_SCALE_FACTOR=0
+export JACK_NO_START_SERVER=1
+export VST3_PATH="${HOME}/.vst3:${HOME}/vst3:/usr/lib/vst3${VST3_PATH:+:$VST3_PATH}"
+export VST_PATH="${HOME}/.vst:/usr/lib/vst${VST_PATH:+:$VST_PATH}"
+export CLAP_PATH="${HOME}/.clap:/usr/lib/clap${CLAP_PATH:+:$CLAP_PATH}"
+export LV2_PATH="${HOME}/.lv2:/usr/lib/lv2${LV2_PATH:+:$LV2_PATH}"
+
+# Xft.dpi: 96 — the single most important line for correct rendering.
+xrdb -merge <<'EOF'
+Xft.dpi: 96
+Xft.antialias: true
+Xft.hinting: true
+Xft.hintstyle: hintslight
+Xft.rgba: rgb
+Xcursor.theme: Adwaita
+Xcursor.size: 24
+EOF
+
 xset s off
+xset s noblank
 xset -dpms
 xsetroot -solid black   # requires xorg-xsetroot
 
-pkill -x tint2 || true
+# Kill orphaned processes from previous Fluxbox/Openbox music sessions.
+# Their autostart/startup scripts background watchdog loops (tint2
+# restart, desktop-heads, fullscreen-panel, etc.) that survive session
+# logout as orphans (PPID 1).  The tint2 watchdog is the one that kept
+# bringing the panel back: the ps snapshot in /tmp/renoise-kiosk.log
+# showed multiple `sh /home/sb/.config/openbox/autostart` processes
+# still alive from a prior session, each looping
+#   while pgrep tint2; sleep 1; done; panel-size.sh ...
+# Kill the watchdogs first (so they can't restart tint2), then tint2.
+pkill -f '/home/sb/.config/openbox/autostart' 2>/dev/null || true
+pkill -f '/home/sb/.fluxbox/startup' 2>/dev/null || true
+pkill -f 'desktop-heads\.py' 2>/dev/null || true
+pkill -x tint2 2>/dev/null || true
+pkill -x picom 2>/dev/null || true
+pkill -x plank 2>/dev/null || true
 
 # Belt-and-suspenders: if ~/.config/openbox/autostart ever does run under
 # this session (it shouldn't for a plain `openbox --config-file` process --
@@ -41,11 +88,29 @@ xrandr --output DP-4 --mode 1920x1080 --primary --pos 0x0 \
        --output DP-2 --mode 1920x1080 --rotate right --pos -1080x-342 \
        --output HDMI-0 --off
 
-openbox --config-file "$HOME/.config/openbox-renoise/rc.xml" &
+openbox --config-file "$HOME/.config/openbox-renoise/rc.xml" --sm-disable &
+obpid=$!
 
-# Not exec'd: Renoise needs to actually return here so autorandr.service can
-# be restored below for normal (XFCE) use afterward.
+# One-shot delayed kill: if something in the LightDM/Xsession chain
+# starts tint2 a few seconds after the session begins (after our initial
+# pkill already ran), this catches it.  Not a loop -- runs once, 5s after
+# openbox starts, then exits.  Also logs a process snapshot so if tint2
+# still shows up we can trace what launched it.
+(
+    sleep 5
+    pkill -x tint2 2>/dev/null || true
+    echo "=== ps snapshot at +5s ===" >>"$log"
+    ps -eo pid,ppid,cmd --sort=pid >>"$log" 2>&1
+) &
+snap_pid=$!
+
+cleanup() {
+    kill "$snap_pid" 2>/dev/null || true
+    kill "$obpid" 2>/dev/null || true
+    sudo systemctl unmask autorandr.service 2>/dev/null || true
+    sudo systemctl start --no-block autorandr.service 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+# Not exec'd: Renoise needs to actually return here so the trap fires.
 renoise
-
-sudo systemctl unmask autorandr.service 2>/dev/null || true
-sudo systemctl start --no-block autorandr.service 2>/dev/null || true

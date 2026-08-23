@@ -14,3 +14,4 @@
 sb ALL=(root) NOPASSWD: /usr/bin/systemctl mask --now autorandr.service
 sb ALL=(root) NOPASSWD: /usr/bin/systemctl unmask autorandr.service
 sb ALL=(root) NOPASSWD: /usr/bin/systemctl start autorandr.service
+sb ALL=(root) NOPASSWD: /usr/bin/systemctl start --no-block autorandr.service
