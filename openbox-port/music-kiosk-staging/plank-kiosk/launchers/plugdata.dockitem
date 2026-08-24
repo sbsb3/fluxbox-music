@@ -1,0 +1,6 @@
+[PlankDockItemPreferences]
+Launcher=file:///usr/share/applications/plugdata.desktop
+SortBy=name
+DirectoryStyle=0
+ShowHiddenFiles=false
+LargeIcons=false
