@@ -56,13 +56,17 @@ xsetroot -solid black   # requires xorg-xsetroot
 # logout as orphans (PPID 1).  Kill the watchdogs first (so they can't
 # restart tint2), then tint2.  Plank is killed here too so a stale
 # `plank -n music` / default dock1 from a prior session can't fight the
-# `plank -n kiosk` we start below.
+# `plank -n kiosk` we start below.  pcmanfm --desktop is killed so desktop
+# icons from a prior Fluxbox/openbox-music session don't bleed through
+# onto the non-fullscreen monitors (HDMI-0, DP-2) in the kiosk; only
+# `pcmanfm --desktop` is targeted, not file-browser windows.
 pkill -f '/home/sb/.config/openbox/autostart' 2>/dev/null || true
 pkill -f '/home/sb/.fluxbox/startup' 2>/dev/null || true
 pkill -f 'desktop-heads\.py' 2>/dev/null || true
 pkill -x tint2 2>/dev/null || true
 pkill -x picom 2>/dev/null || true
 pkill -x plank 2>/dev/null || true
+pkill -f 'pcmanfm --desktop' 2>/dev/null || true
 
 # Belt-and-suspenders: ~/.config/openbox/autostart is sourced by
 # /usr/lib/openbox/openbox-autostart unconditionally after Openbox starts
