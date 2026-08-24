@@ -110,18 +110,20 @@
       </position>
     </application>
     <!-- SunVox: windowed (its own settings disable fullscreen), placed on
-         DP-4 center.  Do NOT set <fullscreen>yes</fullscreen> here:
+         DP-4 top-left.  Do NOT set <fullscreen>yes</fullscreen> here:
          Openbox applies <fullscreen> before <position>, so a forced
          fullscreen snaps to whichever monitor has focus at launch time
          (a secondary: HDMI-0 / DP-2) and the later <position> rule cannot
-         move it back: the window keeps the wrong monitor's rect.  With
-         only <position>, SunVox opens at its default windowed size on
-         DP-4.  decor=no keeps it borderless to match the other DAWs. -->
+         move it back: the window keeps the wrong monitor's rect.
+         <position><x><y> sets the window's TOP-LEFT corner, not its
+         center, so 3406x882 (DP-4 center) pushed the window past the
+         bottom-right edge.  2456x352 = DP-4 origin (2446x342) + 10px
+         margin.  decor=yes so the user can move/resize the windowed app. -->
     <application class="sunvox" type="normal">
-      <decor>no</decor>
+      <decor>yes</decor>
       <position force="yes">
-        <x>3406</x>
-        <y>882</y>
+        <x>2456</x>
+        <y>352</y>
       </position>
     </application>
     <application class="max.exe" type="normal">
