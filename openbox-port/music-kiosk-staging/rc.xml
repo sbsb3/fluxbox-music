@@ -213,30 +213,16 @@
       </mousebind>
     </context>
 
-    <!-- Desktop: click to focus/raise, right-click for root menu -->
+    <!-- Desktop: click to focus/raise only. No right-click menu: this is
+         a kiosk, the root-menu / client-list menus are not useful and
+         would just confuse the user. -->
     <context name="Desktop">
       <mousebind button="Left" action="Press">
         <action name="Focus"/>
         <action name="Raise"/>
       </mousebind>
-      <mousebind button="Right" action="Press">
-        <action name="ShowMenu"><menu>root-menu</menu></action>
-      </mousebind>
     </context>
   </mouse>
-
-  <!-- Menu: loads ~/.config/openbox/menu.xml (or /etc/xdg/openbox/menu.xml
-       as fallback) so the root-menu works on right-click of the desktop.
-       client-menu is built-in and always available. -->
-  <menu>
-    <file>menu.xml</file>
-    <hideDelay>200</hideDelay>
-    <middle>no</middle>
-    <submenuShowDelay>100</submenuShowDelay>
-    <submenuHideDelay>400</submenuHideDelay>
-    <showIcons>yes</showIcons>
-    <manageDesktops>yes</manageDesktops>
-  </menu>
 
   <applications>
     <!-- Plank: above layer so maximized/fullscreen DAWs cannot bury the

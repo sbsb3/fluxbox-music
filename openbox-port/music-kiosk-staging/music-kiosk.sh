@@ -133,24 +133,26 @@ if command -v plank >/dev/null 2>&1; then
     plankpid=$!
 fi
 
-# One-shot delayed snapshot at +5s: catches anything the LightDM/Xsession
-# chain or openbox-autostart starts a few seconds in (after our initial
-# pkill already ran) and kills it, then logs a process tree so it's
-# traceable if something reappears.  The autostart guard at
-# ~/.config/openbox/autostart line 23 checks OPENBOX_MUSIC_SESSION=1 and
-# OPENBOX_MUSIC_KIOSK=1 and should exit before launching pcmanfm/tint2/
-# plank -n music/etc., but this is the safety net in case the guard
-# doesn't trip (env var not inherited, autostart run by a different
-# mechanism, etc.).
+# Background reaper: openbox-autostart (/usr/lib/openbox/openbox-autostart)
+# runs UNCONDITIONALLY before the user autostart guard: it sets the root
+# window to #303030 and then openbox-xdg-autostart may launch tray applets
+# (nm-applet, pasystray) from /etc/xdg/autostart and ~/.config/autostart.
+# The user autostart guard (OPENBOX_MUSIC_KIOSK=1) prevents pcmanfm/tint2/
+# plank -n music from launching, but orphaned processes from the previous
+# session (PPID 1) may still be drawing to the new X server, and the
+# #303030 background overrides our xsetroot -solid black.  This loop runs
+# for ~6s after Openbox starts, killing leftovers and reasserting black,
+# so any flash of icons or gray background lasts well under a second.
 (
-    sleep 5
-    pkill -x tint2 2>/dev/null || true
-    pkill -f 'pcmanfm --desktop' 2>/dev/null || true
-    pkill -f 'plank -n music' 2>/dev/null || true
-    pkill -f 'desktop-heads\.py' 2>/dev/null || true
-    echo "=== ps snapshot at +5s ===" >>"$log"
-    echo "OPENBOX_MUSIC_SESSION=${OPENBOX_MUSIC_SESSION:-<unset>}" >>"$log"
-    echo "OPENBOX_MUSIC_KIOSK=${OPENBOX_MUSIC_KIOSK:-<unset>}" >>"$log"
+    for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        pkill -x tint2 2>/dev/null || true
+        pkill -f 'pcmanfm --desktop' 2>/dev/null || true
+        pkill -f 'plank -n music' 2>/dev/null || true
+        pkill -f 'desktop-heads\.py' 2>/dev/null || true
+        xsetroot -solid black 2>/dev/null || true
+        sleep 0.5
+    done
+    echo "=== ps snapshot at +6s ===" >>"$log"
     ps -eo pid,ppid,cmd --sort=pid >>"$log" 2>&1
 ) &
 snap_pid=$!
