@@ -134,12 +134,23 @@ if command -v plank >/dev/null 2>&1; then
 fi
 
 # One-shot delayed snapshot at +5s: catches anything the LightDM/Xsession
-# chain starts a few seconds in (after our initial pkill already ran) and
-# logs a process tree so it's traceable if tint2/a stray plank reappears.
+# chain or openbox-autostart starts a few seconds in (after our initial
+# pkill already ran) and kills it, then logs a process tree so it's
+# traceable if something reappears.  The autostart guard at
+# ~/.config/openbox/autostart line 23 checks OPENBOX_MUSIC_SESSION=1 and
+# OPENBOX_MUSIC_KIOSK=1 and should exit before launching pcmanfm/tint2/
+# plank -n music/etc., but this is the safety net in case the guard
+# doesn't trip (env var not inherited, autostart run by a different
+# mechanism, etc.).
 (
     sleep 5
     pkill -x tint2 2>/dev/null || true
+    pkill -f 'pcmanfm --desktop' 2>/dev/null || true
+    pkill -f 'plank -n music' 2>/dev/null || true
+    pkill -f 'desktop-heads\.py' 2>/dev/null || true
     echo "=== ps snapshot at +5s ===" >>"$log"
+    echo "OPENBOX_MUSIC_SESSION=${OPENBOX_MUSIC_SESSION:-<unset>}" >>"$log"
+    echo "OPENBOX_MUSIC_KIOSK=${OPENBOX_MUSIC_KIOSK:-<unset>}" >>"$log"
     ps -eo pid,ppid,cmd --sort=pid >>"$log" 2>&1
 ) &
 snap_pid=$!
