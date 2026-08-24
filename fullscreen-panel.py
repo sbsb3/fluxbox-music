@@ -37,7 +37,7 @@ HEAD_REFRESH = 5.0       # re-query the primary output this often (hotplug)
 PANEL_REFRESH = 5.0      # re-locate tint2 / plank this often (can restart)
 GEOM_TOLERANCE = 2       # px slack when comparing a window rect to the head
 
-PANEL_CLASSES = ("tint2", "plank")
+PANEL_CLASSES = ("tint2",)
 
 # task-menu.py's maybe_usr1() self-heal watches for tint2 task buttons whose
 # icon geometry looks "missing" and sends tint2 SIGUSR1 (full destroy+reinit)
