@@ -110,6 +110,19 @@ xrandr --output HDMI-0 --brightness 1.0 --gamma 1.0:0.52:0.18
 openbox --config-file "$HOME/.config/openbox-music-kiosk/rc.xml" --sm-disable &
 obpid=$!
 
+# Compositor: reuses the fluxbox-music picom config (xrender backend,
+# unredir-if-possible=false).  Without a compositor Plank's zoom/hover
+# animation paints solid black over the DAW below it (Plank is a depth-32
+# ARGB dock that needs compositing live), and there are no window shadows
+# or transparency.  Started after Openbox so it has a WM to talk to and
+# before Plank so the dock animates from first map.  --daemon forks, so
+# no PID to track; it exits with the X server / session, and the
+# pkill -x picom in the orphan-cleanup above handles any stale instance
+# from a prior session.
+if command -v picom >/dev/null 2>&1; then
+    picom --config "$HOME/.config/picom/fluxbox-music.conf" --daemon
+fi
+
 # Named dock "kiosk": only Renoise, Bitwig, SunVox, Max 9 (see
 # plank-kiosk/launchers/*.dockitem, deployed to ~/.config/plank/kiosk/).
 # Sleep 1 so Openbox is up first and Plank registers against it; also
