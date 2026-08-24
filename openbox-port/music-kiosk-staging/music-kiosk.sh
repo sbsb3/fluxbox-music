@@ -184,13 +184,15 @@ fi
 ) &
 snap_pid=$!
 
-# Max 9 (Wine/JUCE) auto-sets _NET_WM_STATE_FULLSCREEN when its main
-# console window fills the monitor, which raises it above Plank's `above`
-# layer.  This loop strips fullscreen from any max.exe window that sets
-# it and resizes to fill DP-4 so the console looks fullscreen but stays
-# in Normal layer where Plank can reveal over it.  Patcher windows
-# (also class=max.exe) don't auto-set fullscreen, so they're left alone
-# and can be maximized normally via the titlebar.
+# Max 9 (Wine/JUCE) auto-sets _NET_WM_STATE_FULLSCREEN when its window
+# is resized to exactly match the monitor (1920x1080), which raises it
+# above Plank's `above` layer.  JUCE also fights WM-level maximize by
+# immediately stripping _NET_WM_STATE_MAXIMIZED.  This loop strips
+# fullscreen from any max.exe window that sets it and resizes to
+# 1918x1078 (2px shy of the monitor) so JUCE doesn't re-trigger
+# fullscreen.  The window fills the screen visually but stays in Normal
+# layer where Plank can reveal over it.  Patcher windows (also
+# class=max.exe) get the same treatment.
 maxfix_pid=
 if command -v xdotool >/dev/null 2>&1 && command -v wmctrl >/dev/null 2>&1; then
     (
@@ -200,7 +202,7 @@ if command -v xdotool >/dev/null 2>&1 && command -v wmctrl >/dev/null 2>&1; then
                 if echo "$state" | grep -q "FULLSCREEN"; then
                     wmctrl -i -r "$wid" -b remove,fullscreen 2>/dev/null
                     xdotool windowmove "$wid" 2446 342 2>/dev/null
-                    xdotool windowsize "$wid" 1920 1080 2>/dev/null
+                    xdotool windowsize "$wid" 1918 1078 2>/dev/null
                 fi
             done
             sleep 0.2
