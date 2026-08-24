@@ -8,6 +8,62 @@
     <monitor>Primary</monitor>
   </placement>
 
+  <!-- Theme: same as the user's default openbox config (~/.config/openbox/
+       rc.xml).  Without a <theme> section Openbox falls back to its
+       compiled-in Clearlooks default.  modernflatdark is the installed
+       theme the user already chose.  titleLayout NLIMC = icon, label,
+       iconify, maximize, close (left to right). -->
+  <theme>
+    <name>modernflatdark</name>
+    <titleLayout>NLIMC</titleLayout>
+    <keepBorder>yes</keepBorder>
+    <animateIconify>yes</animateIconify>
+    <font place="ActiveWindow">
+      <name>sans</name>
+      <size>8</size>
+      <weight>bold</weight>
+      <slant>normal</slant>
+    </font>
+    <font place="InactiveWindow">
+      <name>sans</name>
+      <size>8</size>
+      <weight>bold</weight>
+      <slant>normal</slant>
+    </font>
+    <font place="MenuHeader">
+      <name>sans</name>
+      <size>9</size>
+      <weight>normal</weight>
+      <slant>normal</slant>
+    </font>
+    <font place="MenuItem">
+      <name>sans</name>
+      <size>9</size>
+      <weight>normal</weight>
+      <slant>normal</slant>
+    </font>
+    <font place="ActiveOnScreenDisplay">
+      <name>sans</name>
+      <size>9</size>
+      <weight>bold</weight>
+      <slant>normal</slant>
+    </font>
+    <font place="InactiveOnScreenDisplay">
+      <name>sans</name>
+      <size>9</size>
+      <weight>bold</weight>
+      <slant>normal</slant>
+    </font>
+  </theme>
+
+  <!-- Focus follows mouse, raise on click.  Same as Openbox default. -->
+  <focus>
+    <focusNew>yes</focusNew>
+    <followMouse>no</followMouse>
+    <focusLast>yes</focusLast>
+    <underMouse>no</underMouse>
+  </focus>
+
   <!-- Keyboard is intentionally almost empty: this is a kiosk and Plank
        (running apps show an indicator; clicking the icon raises/cycles
        that app) is the app switcher, so no Alt-Tab. The single binding
@@ -23,8 +79,27 @@
 
   <mouse>
     <dragThreshold>8</dragThreshold>
+    <doubleClickTime>500</doubleClickTime>
 
-    <!-- Drag plugin windows by their titlebars, e.g. onto the portrait monitor -->
+    <!-- Alt-drag anywhere on the frame: move / resize fallback -->
+    <context name="Frame">
+      <mousebind button="A-Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="A-Left" action="Drag">
+        <action name="Move"/>
+      </mousebind>
+      <mousebind button="A-Right" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="A-Right" action="Drag">
+        <action name="Resize"/>
+      </mousebind>
+    </context>
+
+    <!-- Titlebar: drag to move, double-click to maximize -->
     <context name="Titlebar">
       <mousebind button="Left" action="Press">
         <action name="Focus"/>
@@ -33,11 +108,46 @@
       <mousebind button="Left" action="Drag">
         <action name="Move"/>
       </mousebind>
+      <mousebind button="Left" action="DoubleClick">
+        <action name="ToggleMaximize"/>
+      </mousebind>
+      <mousebind button="Right" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+        <action name="ShowMenu"><menu>client-menu</menu></action>
+      </mousebind>
     </context>
 
-    <context name="Close">
-      <mousebind button="Left" action="Click">
-        <action name="Close"/>
+    <!-- Resize edges -->
+    <context name="Top">
+      <mousebind button="Left" action="Drag">
+        <action name="Resize"><edge>top</edge></action>
+      </mousebind>
+    </context>
+    <context name="Left">
+      <mousebind button="Left" action="Drag">
+        <action name="Resize"><edge>left</edge></action>
+      </mousebind>
+    </context>
+    <context name="Right">
+      <mousebind button="Left" action="Drag">
+        <action name="Resize"><edge>right</edge></action>
+      </mousebind>
+    </context>
+    <context name="Bottom">
+      <mousebind button="Left" action="Drag">
+        <action name="Resize"><edge>bottom</edge></action>
+      </mousebind>
+    </context>
+
+    <!-- Resize corners -->
+    <context name="TRCorner BRCorner TLCorner BLCorner">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Drag">
+        <action name="Resize"/>
       </mousebind>
     </context>
 
@@ -54,7 +164,79 @@
         <action name="Resize"/>
       </mousebind>
     </context>
+
+    <!-- Window icon: click for client menu (close, maximize, etc.) -->
+    <context name="Icon">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+        <action name="ShowMenu"><menu>client-menu</menu></action>
+      </mousebind>
+    </context>
+
+    <!-- Minimize button -->
+    <context name="Iconify">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Click">
+        <action name="Iconify"/>
+      </mousebind>
+    </context>
+
+    <!-- Maximize button: left=toggle, middle=vertical, right=horizontal -->
+    <context name="Maximize">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Click">
+        <action name="ToggleMaximize"/>
+      </mousebind>
+      <mousebind button="Middle" action="Click">
+        <action name="ToggleMaximize"><direction>vertical</direction></action>
+      </mousebind>
+      <mousebind button="Right" action="Click">
+        <action name="ToggleMaximize"><direction>horizontal</direction></action>
+      </mousebind>
+    </context>
+
+    <!-- Close button -->
+    <context name="Close">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Click">
+        <action name="Close"/>
+      </mousebind>
+    </context>
+
+    <!-- Desktop: click to focus/raise, right-click for root menu -->
+    <context name="Desktop">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Right" action="Press">
+        <action name="ShowMenu"><menu>root-menu</menu></action>
+      </mousebind>
+    </context>
   </mouse>
+
+  <!-- Menu: loads ~/.config/openbox/menu.xml (or /etc/xdg/openbox/menu.xml
+       as fallback) so the root-menu works on right-click of the desktop.
+       client-menu is built-in and always available. -->
+  <menu>
+    <file>menu.xml</file>
+    <hideDelay>200</hideDelay>
+    <middle>no</middle>
+    <submenuShowDelay>100</submenuShowDelay>
+    <submenuHideDelay>400</submenuHideDelay>
+    <showIcons>yes</showIcons>
+    <manageDesktops>yes</manageDesktops>
+  </menu>
 
   <applications>
     <!-- Plank: above layer so maximized/fullscreen DAWs cannot bury the
