@@ -35,6 +35,7 @@ TARGET_X = 2446
 TARGET_Y = 360
 MIN_SIZE = 100  # skip 1x1 IME/placeholder windows
 GEOM_TOLERANCE = 50  # px slack when detecting "was just maximized"
+TARGET_TOLERANCE = 2  # px slack when detecting "already at target"
 
 # Monitor size to compare against
 MON_W = 1920
@@ -119,6 +120,10 @@ def main():
             # close to monitor size, it's a helper/patch window — leave it.
             if not has_fs and not has_max:
                 if abs(g.width - MON_W) > GEOM_TOLERANCE or abs(g.height - MON_H) > GEOM_TOLERANCE:
+                    return
+                # Already at target geometry — reconfiguring would raise
+                # the main patcher above a helper the user just clicked.
+                if abs(g.width - TARGET_W) <= TARGET_TOLERANCE and abs(g.height - TARGET_H) <= TARGET_TOLERANCE:
                     return
             # Set cooldown to prevent re-entrancy from our own property changes
             cooldown[wid] = now + 0.3
