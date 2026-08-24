@@ -94,6 +94,8 @@ def main():
     root.change_attributes(event_mask=X.PropertyChangeMask)
     scan_clients()
 
+    last_scan = time.monotonic()
+
     while True:
         if d.pending_events():
             ev = d.next_event()
@@ -103,12 +105,17 @@ def main():
                 ev_atom = getattr(ev, "atom", None)
                 if ev_wid == root.id and ev_atom == atom_client_list:
                     scan_clients()
+                    last_scan = time.monotonic()
                 elif ev_wid in watched and ev_atom == atom_state:
                     fix_window(ev_wid)
             continue
 
+        now = time.monotonic()
+        if now - last_scan >= 0.1:
+            scan_clients()
+            last_scan = now
+
         time.sleep(0.01)
-        scan_clients()
 
 
 if __name__ == "__main__":
