@@ -48,7 +48,19 @@ EOF
 xset s off
 xset s noblank
 xset -dpms
-xsetroot -solid black   # requires xorg-xsetroot
+xsetroot -solid black   # quick first paint; feh reasserts a pixmap below
+
+# Black root pixmap: xsetroot -solid sets only the root window's
+# background PIXEL, which on rotated RandR outputs (DP-2 portrait) the
+# X server does not reliably apply to the entire rotated framebuffer,
+# leaving the X server's default white visible in strips at the top and
+# bottom of the portrait monitor.  feh --bg-fill creates a full-root-
+# window-size PIXMAP (not a pixel) from a 1x1 black image and sets it
+# as the root window background, covering every pixel regardless of
+# output rotation.  Created once here, reused by the reaper loop below.
+blackimg=/tmp/kiosk-black.png
+convert -size 1x1 xc:black "$blackimg" 2>/dev/null || true
+feh --no-fehbg --bg-fill "$blackimg" 2>/dev/null || xsetroot -solid black
 
 # Kill orphaned processes from previous Fluxbox/Openbox music sessions.
 # Their autostart/startup scripts background watchdog loops (tint2
@@ -135,21 +147,22 @@ fi
 
 # Background reaper: openbox-autostart (/usr/lib/openbox/openbox-autostart)
 # runs UNCONDITIONALLY before the user autostart guard: it sets the root
-# window to #303030 and then openbox-xdg-autostart may launch tray applets
-# (nm-applet, pasystray) from /etc/xdg/autostart and ~/.config/autostart.
-# The user autostart guard (OPENBOX_MUSIC_KIOSK=1) prevents pcmanfm/tint2/
-# plank -n music from launching, but orphaned processes from the previous
-# session (PPID 1) may still be drawing to the new X server, and the
-# #303030 background overrides our xsetroot -solid black.  This loop runs
-# for ~6s after Openbox starts, killing leftovers and reasserting black,
-# so any flash of icons or gray background lasts well under a second.
+# window to #303030 (overriding our black) and openbox-xdg-autostart may
+# launch tray applets from /etc/xdg/autostart.  The user autostart guard
+# (OPENBOX_MUSIC_KIOSK=1) prevents pcmanfm/tint2/plank -n music from
+# launching, but orphaned processes from the previous session (PPID 1)
+# may still be drawing to the new X server.  This loop runs for ~6s after
+# Openbox starts, killing leftovers and reasserting the black root pixmap
+# (via feh, which covers rotated outputs — see the comment above where
+# $blackimg is created), so any flash of icons or gray background lasts
+# well under a second.
 (
     for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
         pkill -x tint2 2>/dev/null || true
         pkill -f 'pcmanfm --desktop' 2>/dev/null || true
         pkill -f 'plank -n music' 2>/dev/null || true
         pkill -f 'desktop-heads\.py' 2>/dev/null || true
-        xsetroot -solid black 2>/dev/null || true
+        feh --no-fehbg --bg-fill "$blackimg" 2>/dev/null || xsetroot -solid black 2>/dev/null || true
         sleep 0.5
     done
     echo "=== ps snapshot at +6s ===" >>"$log"
