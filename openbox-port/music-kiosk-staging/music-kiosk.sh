@@ -77,24 +77,25 @@ export OPENBOX_MUSIC_KIOSK=1
 
 # A system udev rule (/usr/lib/udev/rules.d/40-monitor-hotplug.rules)
 # restarts autorandr.service on every DRM "change" event, and the xrandr
-# call below is exactly such an event.  Left alone, autorandr.service
-# reapplies the saved 3-monitor "default" profile (HDMI-0 back on,
-# DP-4/DP-2 moved) a moment later, undoing this layout out from under the
-# DAWs.  Mask it for the duration; restored on exit below.  Needs the
-# sudoers rule in music-kiosk.sudoers (see deploy.sh) so this doesn't
-# block on a password with no terminal around to answer one.
+# call below is exactly such an event.  The layout below now matches the
+# saved XFCE/autorandr "default" profile exactly, so autorandr re-applying
+# it would be a no-op -- but the re-apply event itself still causes a
+# mid-session flicker, so mask for the duration and restore on exit.
+# Needs the sudoers rule in music-kiosk.sudoers (see deploy.sh) so this
+# doesn't block on a password with no terminal around to answer one.
 sudo systemctl mask --now autorandr.service 2>/dev/null || true
 
-# Layout: DP-4 primary landscape at 0x0, DP-2 portrait to its left, HDMI-0 off.
-# A fresh X server forgets your XFCE layout, so rotation and positions must be
-# set explicitly here.  The -342 y-offset on DP-2 matches its vertical
-# alignment against DP-4 in the saved XFCE/autorandr "default" layout
-# (DP-2 pos 1366x0, DP-4 pos 2446x342 there -- same -1080x-342 delta), so
-# the mouse crosses the DP-2/DP-4 border in a straight line instead of
-# jumping vertically.
-xrandr --output DP-4 --mode 1920x1080 --primary --pos 0x0 \
-       --output DP-2 --mode 1920x1080 --rotate right --pos -1080x-342 \
-       --output HDMI-0 --off
+# Layout: all 3 monitors on, positions copied verbatim from the XFCE
+# displays.xml "default" profile (and autorandr ~/.config/autorandr/default):
+#   HDMI-0  1366x768 @59.79  pos 0x273     (leftmost, landscape)
+#   DP-2    1920x1080 @60     pos 1366x0   (portrait, rotated right)
+#   DP-4    1920x1080 @60     pos 2446x342 (primary, landscape, rightmost)
+# A fresh X server forgets the XFCE layout, so rotation/positions/rates
+# must be set explicitly here.  HDMI-0 sits to the left of DP-2 which sits
+# to the left of DP-4, matching the physical desk layout.
+xrandr --output HDMI-0 --mode 1366x768 --rate 59.79 --pos 0x273 \
+       --output DP-2   --mode 1920x1080 --rate 60 --rotate right --pos 1366x0 \
+       --output DP-4   --mode 1920x1080 --rate 60 --primary --pos 2446x342
 
 openbox --config-file "$HOME/.config/openbox-music-kiosk/rc.xml" --sm-disable &
 obpid=$!

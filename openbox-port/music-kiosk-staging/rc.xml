@@ -75,10 +75,15 @@
          (Renoise is the known case; the others get the same treatment
          for a consistent kiosk). No <monitor> index here on purpose:
          per-app <position><monitor> takes a raw 0-based RandR index whose
-         numbering vs. DP-4/DP-2 was never confirmed (see renoise-staging
-         rc.xml for the same reasoning); x/y=0x0 is unambiguous: it sits
-         strictly inside DP-4's rectangle (DP-2 occupies negative x), so
-         Openbox finds DP-4 from the point alone.
+         numbering vs. DP-4/DP-2/HDMI-0 was never confirmed (see
+         renoise-staging rc.xml for the same reasoning); x/y is
+         unambiguous instead. The point 3406x882 is the CENTER of DP-4's
+         rectangle (DP-4 pos 2446x342, size 1920x1080 -> center
+         2446+960, 342+540), strictly inside DP-4 and clear of all
+         monitor boundaries, so Openbox finds DP-4 from the point alone.
+         (Was 0x0 when DP-4 sat at 0x0 in the 2-monitor kiosk layout; the
+         3-monitor XFCE-exact layout moved DP-4 to 2446x342, so 0x0 now
+         lands in HDMI-0's rect and had to move with it.)
 
          WM_CLASS class fields: Renoise and sunvox are confirmed live
          (sunvox is lowercase). Bitwig's comes from its .desktop
@@ -92,32 +97,32 @@
       <decor>no</decor>
       <fullscreen>yes</fullscreen>
       <position force="yes">
-        <x>0</x>
-        <y>0</y>
+        <x>3406</x>
+        <y>882</y>
       </position>
     </application>
     <application class="com.bitwig.BitwigStudio" type="normal">
       <decor>no</decor>
       <fullscreen>yes</fullscreen>
       <position force="yes">
-        <x>0</x>
-        <y>0</y>
+        <x>3406</x>
+        <y>882</y>
       </position>
     </application>
     <application class="sunvox" type="normal">
       <decor>no</decor>
       <fullscreen>yes</fullscreen>
       <position force="yes">
-        <x>0</x>
-        <y>0</y>
+        <x>3406</x>
+        <y>882</y>
       </position>
     </application>
     <application class="max.exe" type="normal">
       <decor>no</decor>
       <fullscreen>yes</fullscreen>
       <position force="yes">
-        <x>0</x>
-        <y>0</y>
+        <x>3406</x>
+        <y>882</y>
       </position>
     </application>
 

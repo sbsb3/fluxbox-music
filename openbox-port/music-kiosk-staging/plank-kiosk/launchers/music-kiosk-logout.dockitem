@@ -1,0 +1,6 @@
+[PlankDockItemPreferences]
+Launcher=file:///home/sb/.local/share/applications/music-kiosk-logout.desktop
+SortBy=name
+DirectoryStyle=0
+ShowHiddenFiles=false
+LargeIcons=false

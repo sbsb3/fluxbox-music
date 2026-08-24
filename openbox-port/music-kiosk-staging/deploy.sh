@@ -5,6 +5,8 @@
 #   rc.xml                -> ~/.config/openbox-music-kiosk/rc.xml           (user)
 #   music-kiosk.desktop   -> /usr/share/xsessions/music-kiosk.desktop      (sudo)
 #   music-kiosk.sudoers   -> /etc/sudoers.d/music-kiosk                    (sudo)
+#   music-kiosk-logout.sh -> /usr/local/bin/music-kiosk-logout             (sudo)
+#   music-kiosk-logout.desktop -> ~/.local/share/applications/             (user)
 #   plank-kiosk/launchers -> ~/.config/plank/kiosk/launchers               (user)
 #
 # System paths are written via sudo (or directly if already root).
@@ -17,15 +19,19 @@ src_sh="$here/music-kiosk.sh"
 src_rc="$here/rc.xml"
 src_desktop="$here/music-kiosk.desktop"
 src_sudoers="$here/music-kiosk.sudoers"
+src_logout_sh="$here/music-kiosk-logout.sh"
+src_logout_desktop="$here/music-kiosk-logout.desktop"
 src_plank="$here/plank-kiosk/launchers"
 
 dst_sh=/usr/local/bin/music-kiosk
 dst_rc="$HOME/.config/openbox-music-kiosk/rc.xml"
 dst_desktop=/usr/share/xsessions/music-kiosk.desktop
 dst_sudoers=/etc/sudoers.d/music-kiosk
+dst_logout_sh=/usr/local/bin/music-kiosk-logout
+dst_logout_desktop="$HOME/.local/share/applications/music-kiosk-logout.desktop"
 dst_plank="$HOME/.config/plank/kiosk/launchers"
 
-for f in "$src_sh" "$src_rc" "$src_desktop" "$src_sudoers"; do
+for f in "$src_sh" "$src_rc" "$src_desktop" "$src_sudoers" "$src_logout_sh" "$src_logout_desktop"; do
     [ -f "$f" ] || { echo "missing source: $f" >&2; exit 1; }
 done
 [ -d "$src_plank" ] || { echo "missing source dir: $src_plank" >&2; exit 1; }
@@ -44,12 +50,14 @@ do_install() {
     fi
 }
 
-mkdir -p "$(dirname "$dst_rc")" "$dst_plank"
+mkdir -p "$(dirname "$dst_rc")" "$dst_plank" "$(dirname "$dst_logout_desktop")"
 
-do_install 755 "$src_sh"       "$dst_sh"
-do_install 644 "$src_rc"       "$dst_rc"
-do_install 644 "$src_desktop"  "$dst_desktop"
-do_install 440 "$src_sudoers"  "$dst_sudoers"
+do_install 755 "$src_sh"              "$dst_sh"
+do_install 644 "$src_rc"              "$dst_rc"
+do_install 644 "$src_desktop"         "$dst_desktop"
+do_install 440 "$src_sudoers"         "$dst_sudoers"
+do_install 755 "$src_logout_sh"       "$dst_logout_sh"
+do_install 644 "$src_logout_desktop"  "$dst_logout_desktop"
 
 # Plank dockitems go in as user files (no sudo). --target-directory keeps
 # this plain-POSIX (no cp -t flag, which some platforms lack).
@@ -58,9 +66,11 @@ for item in "$src_plank"/*.dockitem; do
     install -m 644 "$item" "$dst_plank/"
 done
 
-printf 'installed:\n  %s -> %s\n  %s -> %s\n  %s -> %s\n  %s -> %s\n  %s/*.dockitem -> %s\n' \
-    "$src_sh"       "$dst_sh" \
-    "$src_rc"       "$dst_rc" \
-    "$src_desktop"  "$dst_desktop" \
-    "$src_sudoers"  "$dst_sudoers" \
-    "$src_plank"    "$dst_plank"
+printf 'installed:\n  %s -> %s\n  %s -> %s\n  %s -> %s\n  %s -> %s\n  %s -> %s\n  %s -> %s\n  %s/*.dockitem -> %s\n' \
+    "$src_sh"              "$dst_sh" \
+    "$src_rc"              "$dst_rc" \
+    "$src_desktop"         "$dst_desktop" \
+    "$src_sudoers"         "$dst_sudoers" \
+    "$src_logout_sh"       "$dst_logout_sh" \
+    "$src_logout_desktop"  "$dst_logout_desktop" \
+    "$src_plank"           "$dst_plank"

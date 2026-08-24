@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Log Out
+Comment=End the Music Kiosk session
+Exec=/usr/local/bin/music-kiosk-logout
+TryExec=/usr/local/bin/music-kiosk-logout
+Icon=system-log-out
+Type=Application
+Categories=System;
