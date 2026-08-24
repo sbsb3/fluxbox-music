@@ -237,33 +237,31 @@
       <desktop>all</desktop>
     </application>
 
-    <!-- Each DAW: fullscreen, undecorated, forced onto DP-4 (primary).
+    <!-- Each DAW: maximized (NOT fullscreen), undecorated, forced onto
+         DP-4 (primary).  <fullscreen>yes</fullscreen> was the original
+         approach but it raises the window above EVERYTHING in Openbox,
+         including Plank's `above` layer, so Plank could not reveal on
+         mouse-hover while a fullscreen DAW had focus.  <maximized> fills
+         the monitor the same way but keeps the window in the Normal
+         layer, so Plank (above) can reveal over it.  This matches the
+         openbox-music session, where Renoise has no fullscreen rule at
+         all and Plank hide-mode works correctly.
+
          force="yes" overrides the app's saved geometry, which otherwise
-         maps onto the portrait DP-2 and fullscreens clipped there
-         (Renoise is the known case; the others get the same treatment
-         for a consistent kiosk). No <monitor> index here on purpose:
-         per-app <position><monitor> takes a raw 0-based RandR index whose
-         numbering vs. DP-4/DP-2/HDMI-0 was never confirmed (see
-         renoise-staging rc.xml for the same reasoning); x/y is
-         unambiguous instead. The point 3406x882 is the CENTER of DP-4's
-         rectangle (DP-4 pos 2446x342, size 1920x1080 -> center
-         2446+960, 342+540), strictly inside DP-4 and clear of all
-         monitor boundaries, so Openbox finds DP-4 from the point alone.
-         (Was 0x0 when DP-4 sat at 0x0 in the 2-monitor kiosk layout; the
-         3-monitor XFCE-exact layout moved DP-4 to 2446x342, so 0x0 now
-         lands in HDMI-0's rect and had to move with it.)
+         maps onto the portrait DP-2 (Renoise is the known case).  The
+         point 3406x882 is the CENTER of DP-4's rectangle (DP-4 pos
+         2446x342, size 1920x1080 -> center 2446+960, 342+540), strictly
+         inside DP-4, so Openbox finds DP-4 from the point alone and
+         maximizes on that monitor.
 
          WM_CLASS class fields: Renoise and sunvox are confirmed live
          (sunvox is lowercase). Bitwig's comes from its .desktop
          StartupWMClass=com.bitwig.BitwigStudio. Max 9 is a Wine app; its
          .desktop StartupWMClass=max.exe; Wine typically sets WM_CLASS
-         to the .exe name, so class="max.exe" is the best guess; if a
-         launched Max window does not go fullscreen, run
-           xprop WM_CLASS | grep -i max
-         on it and correct the class below. -->
+         to the .exe name, so class="max.exe" is the best guess. -->
     <application class="Renoise" type="normal">
       <decor>no</decor>
-      <fullscreen>yes</fullscreen>
+      <maximized>yes</maximized>
       <position force="yes">
         <x>3406</x>
         <y>882</y>
@@ -271,7 +269,7 @@
     </application>
     <application class="com.bitwig.BitwigStudio" type="normal">
       <decor>no</decor>
-      <fullscreen>yes</fullscreen>
+      <maximized>yes</maximized>
       <position force="yes">
         <x>3406</x>
         <y>882</y>
@@ -296,7 +294,7 @@
     </application>
     <application class="max.exe" type="normal">
       <decor>no</decor>
-      <fullscreen>yes</fullscreen>
+      <maximized>yes</maximized>
       <position force="yes">
         <x>3406</x>
         <y>882</y>
@@ -304,13 +302,12 @@
     </application>
 
     <!-- Plugin editors and dialogs: floating, decorated, draggable.
-         <layer>above</layer> is required for these to be visible over a
-         fullscreen DAW on DP-4: fullscreen Normal-layer windows stack above
-         other Normal-layer windows in Openbox, so without this a zenity
-         logout dialog (or any plugin alert / file picker) maps behind the
-         DAW and is invisible: the user sees nothing and keeps clicking
-         the launcher, piling up hidden dialogs. `above` lifts them over
-         fullscreen Normal windows (same reason Plank/tint2 are `above`). -->
+         <layer>above</layer> keeps these visible over a maximized DAW on
+         DP-4: maximized Normal-layer windows stack above other Normal-
+         layer windows in Openbox, so without this a zenity logout dialog
+         (or any plugin alert / file picker) could map behind the DAW.
+         `above` lifts them over maximized Normal windows (same reason
+         Plank is `above`). -->
     <application name="*" type="dialog">
       <decor>yes</decor>
       <fullscreen>no</fullscreen>
