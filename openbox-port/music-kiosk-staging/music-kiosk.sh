@@ -139,6 +139,16 @@ fi
 # plank-kiosk/launchers/*.dockitem, deployed to ~/.config/plank/kiosk/).
 # Sleep 1 so Openbox is up first and Plank registers against it; also
 # gives the pkill above a moment to settle.
+#
+# hide-mode='none': Plank defaults to 'intelligent', which auto-hides the
+# dock when a fullscreen/maximized window is on the same monitor.  Renoise
+# is fullscreen on DP-4 where Plank lives, so Plank would vanish whenever
+# Renoise has focus -- making it impossible to switch apps without
+# unfocusing Renoise first.  'none' forces the dock to stay visible at
+# all times, which is what a kiosk needs.
+if command -v dconf >/dev/null 2>&1; then
+    dconf write /net/launchpad/plank/docks/kiosk/hide-mode "'none'" 2>/dev/null || true
+fi
 plankpid=
 if command -v plank >/dev/null 2>&1; then
     ( sleep 1; exec plank -n kiosk ) &
