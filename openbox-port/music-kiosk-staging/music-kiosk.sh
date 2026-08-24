@@ -97,6 +97,12 @@ xrandr --output HDMI-0 --mode 1366x768 --rate 59.79 --pos 0x273 \
        --output DP-2   --mode 1920x1080 --rate 60 --rotate right --pos 1366x0 \
        --output DP-4   --mode 1920x1080 --rate 60 --primary --pos 2446x342
 
+# HDMI-0 color profile: software gamma ramp (xrandr --brightness/--gamma
+# rewrite the gamma LUT, not hardware).  Applied after the layout call
+# because any xrandr reconfiguration of the output resets the ramp.
+# 1.0:0.52:0.18 is a warm/red-heavy tint for that monitor.
+xrandr --output HDMI-0 --brightness 1.0 --gamma 1.0:0.52:0.18
+
 openbox --config-file "$HOME/.config/openbox-music-kiosk/rc.xml" --sm-disable &
 obpid=$!
 
