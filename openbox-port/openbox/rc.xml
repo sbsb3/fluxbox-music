@@ -345,7 +345,7 @@
     </position>
   </application>
   <application class="max.exe" type="normal">
-    <maximized>yes</maximized>
+    <decor>yes</decor>
   </application>
 </applications>
 

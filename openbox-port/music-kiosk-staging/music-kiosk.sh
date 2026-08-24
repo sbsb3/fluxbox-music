@@ -184,8 +184,34 @@ fi
 ) &
 snap_pid=$!
 
+# Max 9 (Wine/JUCE) auto-sets _NET_WM_STATE_FULLSCREEN when its window
+# fills the monitor, which raises it above Plank's `above` layer.  It also
+# fights WM-level maximize by setting WM_NORMAL_HINTS min=max (fixed size),
+# which makes Openbox strip the maximized state — clicking the titlebar
+# maximize button just flashes and reverts.  This loop watches for either
+# state on a max.exe window, strips it, and resizes to fill DP-4 so Max
+# looks fullscreen but stays in Normal layer where Plank can reveal over it.
+maxfix_pid=
+if command -v xdotool >/dev/null 2>&1 && command -v wmctrl >/dev/null 2>&1; then
+    (
+        while true; do
+            for wid in $(xdotool search --class "max.exe" 2>/dev/null); do
+                state=$(xprop -id "$wid" _NET_WM_STATE 2>/dev/null)
+                if echo "$state" | grep -q "FULLSCREEN\|MAXIMIZED"; then
+                    wmctrl -i -r "$wid" -b remove,fullscreen,maximized_vert,maximized_horz 2>/dev/null
+                    xdotool windowmove "$wid" 2446 342 2>/dev/null
+                    xdotool windowsize "$wid" 1920 1080 2>/dev/null
+                fi
+            done
+            sleep 0.2
+        done
+    ) &
+    maxfix_pid=$!
+fi
+
 cleanup() {
     kill "$snap_pid" 2>/dev/null || true
+    kill "$maxfix_pid" 2>/dev/null || true
     [ -n "$plankpid" ] && kill "$plankpid" 2>/dev/null || true
     pkill -x plank 2>/dev/null || true
     kill "$obpid" 2>/dev/null || true
