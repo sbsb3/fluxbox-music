@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# plank-dev — switch the running Plank dock to the "dev" profile
+# Kills any running plank instance and starts plank -n dev.
+
+dconf write /net/launchpad/plank/docks/dev/pinned-only false 2>/dev/null
+pkill -x plank 2>/dev/null
+sleep 0.3
+setsid plank -n dev >/dev/null 2>&1 <&- &
+disown 2>/dev/null
+
+echo "Switched to dev plank."

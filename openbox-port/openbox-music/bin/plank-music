@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# plank-music — switch the running Plank dock to the "music" profile
+# Kills any running plank instance and starts plank -n music.
+
+dconf write /net/launchpad/plank/docks/music/pinned-only false 2>/dev/null
+pkill -x plank 2>/dev/null
+sleep 0.3
+setsid plank -n music >/dev/null 2>&1 <&- &
+disown 2>/dev/null
+
+echo "Switched to music plank."

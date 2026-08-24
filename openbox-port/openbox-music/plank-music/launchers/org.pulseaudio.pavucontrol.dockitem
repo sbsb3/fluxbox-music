@@ -1,0 +1,6 @@
+[PlankDockItemPreferences]
+Launcher=file:///usr/share/applications/org.pulseaudio.pavucontrol.desktop
+SortBy=name
+DirectoryStyle=0
+ShowHiddenFiles=false
+LargeIcons=false
