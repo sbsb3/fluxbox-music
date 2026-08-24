@@ -140,15 +140,18 @@ fi
 # Sleep 1 so Openbox is up first and Plank registers against it; also
 # gives the pkill above a moment to settle.
 #
-# hide-mode='auto': Plank defaults to 'intelligent', which auto-hides
-# the dock when a fullscreen/maximized window overlaps it AND refuses to
-# reveal on mouse-hover while that fullscreen window has focus -- so with
-# Renoise fullscreen on DP-4 the dock was unreachable until you focused
-# another app.  'auto' hides the dock the same way but always reveals on
-# mouse-to-edge regardless of what window is focused, which is what a
-# kiosk needs.  'none' (always visible) was tried and rejected by the user.
+# hide-mode='auto' + pressure-reveal=true: Plank defaults to
+# hide-mode='intelligent', which auto-hides the dock when a
+# fullscreen/maximized window overlaps it AND refuses to reveal on
+# mouse-hover while that window has focus.  'auto' hides the dock the
+# same way but always reveals on mouse-to-edge regardless of what
+# window is focused.  pressure-reveal=true + unhide-delay=60 match the
+# working dock1 config: the user pushes the mouse against the bottom
+# edge and the dock appears after ~60ms of pressure.
 if command -v dconf >/dev/null 2>&1; then
     dconf write /net/launchpad/plank/docks/kiosk/hide-mode "'auto'" 2>/dev/null || true
+    dconf write /net/launchpad/plank/docks/kiosk/pressure-reveal true 2>/dev/null || true
+    dconf write /net/launchpad/plank/docks/kiosk/unhide-delay 60 2>/dev/null || true
 fi
 plankpid=
 if command -v plank >/dev/null 2>&1; then
