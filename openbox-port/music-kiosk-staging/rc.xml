@@ -293,12 +293,7 @@
       </position>
     </application>
     <application class="max.exe" type="normal">
-      <decor>no</decor>
-      <maximized>yes</maximized>
-      <position force="yes">
-        <x>3406</x>
-        <y>882</y>
-      </position>
+      <decor>yes</decor>
     </application>
 
     <!-- Plugin editors and dialogs: floating, decorated, draggable.
