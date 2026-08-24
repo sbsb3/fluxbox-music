@@ -344,6 +344,9 @@
       <y>32</y>
     </position>
   </application>
+  <application class="max.exe" type="normal">
+    <maximized>yes</maximized>
+  </application>
 </applications>
 
 </openbox_config>
