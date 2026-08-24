@@ -64,14 +64,16 @@
     <underMouse>no</underMouse>
   </focus>
 
-  <!-- Keyboard is intentionally almost empty: this is a kiosk and Plank
-       (running apps show an indicator; clicking the icon raises/cycles
-       that app) is the app switcher, so no Alt-Tab. The single binding
-       C-A-End exits Openbox, which ends the session (music-kiosk.sh is
-       blocked on `wait $obpid`). renoise-kiosk ties session exit to
-       Renoise quitting; this multi-app session has no single owning app,
-       so an explicit exit binding is required. -->
+  <!-- Keyboard: Alt-Tab delegates to the skippy-xd-based switcher
+       (same as the default openbox config), C-A-End exits Openbox
+       which ends the session (music-kiosk.sh is blocked on wait $obpid). -->
   <keyboard>
+    <keybind key="A-Tab">
+      <action name="Execute"><command>/home/sb/scripts/alttab.sh next</command></action>
+    </keybind>
+    <keybind key="A-S-Tab">
+      <action name="Execute"><command>/home/sb/scripts/alttab.sh prev</command></action>
+    </keybind>
     <keybind key="C-A-End">
       <action name="Exit"/>
     </keybind>

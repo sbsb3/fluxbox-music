@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 """Fix Max 9 (Wine/JUCE) window behavior in the kiosk session.
 
-JUCE does two things that break window management:
+JUCE does three things that break window management:
 1. When a max.exe window is resized to exactly match the monitor
    (1920x1080), JUCE auto-sets _NET_WM_STATE_FULLSCREEN, which raises
    it above Plank's `above` layer.
 2. When Openbox sets _NET_WM_STATE_MAXIMIZED (titlebar maximize button,
    Alt-F10, etc.), JUCE immediately sends a ClientMessage to strip it,
    so the maximize never sticks — the window just flashes.
+3. JUCE sets WM_NORMAL_HINTS with min=max (fixed size) to prevent
+   resizing, and resets these hints after any configure request.
 
-The strip happens faster than any property read can catch it, so this
-script doesn't try to read _NET_WM_STATE on PropertyNotify.  Instead,
-on ANY _NET_WM_STATE PropertyNotify for a real max.exe window (not
-1x1 placeholders), it resizes to 1918x1078 (2px shy of the monitor)
-so JUCE doesn't re-trigger fullscreen.  The window fills the screen
-visually but stays in Normal layer where Plank can reveal over it.
+This script uses Xlib events to catch _NET_WM_STATE changes on max.exe
+windows.  When it sees any change, it:
+  - Strips _NET_WM_STATE (removes fullscreen/maximized)
+  - Resets WM_NORMAL_HINTS to allow the target size (min=1, max=large)
+  - Configures the window to 1918x1060 at 2446,360 (2px shy of the
+    monitor, offset by 18px for the title bar frame)
 
-For FULLSCREEN (which persists long enough to read), it also strips
-the state atom directly.
+The window fills the screen visually with a visible title bar, but
+stays in Normal layer where Plank can reveal over it.
 """
 from __future__ import annotations
 
@@ -27,10 +29,17 @@ import Xlib.Xatom as Xatom
 
 MAX_CLASS = "max.exe"
 TARGET_W = 1918
-TARGET_H = 1078
+TARGET_H = 1060
 TARGET_X = 2446
-TARGET_Y = 342
+TARGET_Y = 360
 MIN_SIZE = 100  # skip 1x1 IME/placeholder windows
+
+# WM_SIZE_HINTS flags
+PPosition = 4
+PSize = 8
+PMinSize = 16
+PMaxSize = 32
+PWinGravity = 512
 
 
 def class_tokens(win):
@@ -45,10 +54,12 @@ def main():
     d = display.Display()
     root = d.screen().root
     atom_state = d.intern_atom("_NET_WM_STATE")
-    atom_fs = d.intern_atom("_NET_WM_STATE_FULLSCREEN")
     atom_client_list = d.intern_atom("_NET_CLIENT_LIST")
+    atom_normal_hints = d.intern_atom("WM_NORMAL_HINTS")
+    atom_cardinal = d.intern_atom("CARDINAL")
 
     watched = {}
+    cooldown = {}  # wid -> monotonic timestamp until which we skip fixes
 
     def scan_clients():
         try:
@@ -73,17 +84,39 @@ def main():
         for wid in list(watched):
             if wid not in live:
                 del watched[wid]
+                cooldown.pop(wid, None)
 
     def fix_window(wid):
+        now = time.monotonic()
+        if wid in cooldown and now < cooldown[wid]:
+            return
+        # Set cooldown to prevent re-entrancy from our own property changes
+        cooldown[wid] = now + 0.3
         try:
             win = d.create_resource_object("window", wid)
-            # Check geometry — skip tiny placeholder windows
             g = win.get_geometry()
             if g.width < MIN_SIZE or g.height < MIN_SIZE:
                 return
-            # Strip _NET_WM_STATE (removes fullscreen/maximized)
+            # Wait briefly for JUCE to settle its own hint/state fighting
+            time.sleep(0.05)
+            # Strip _NET_WM_STATE
             win.change_property(atom_state, Xatom.ATOM, 32, [])
-            # Resize to 1918x1078
+            # Reset WM_NORMAL_HINTS to allow target size
+            # flags=PPosition|PSize|PMinSize|PMaxSize|PWinGravity
+            flags = PPosition | PSize | PMinSize | PMaxSize | PWinGravity
+            hints = [
+                flags, 0, 0,                         # flags, pad, pad
+                TARGET_X, TARGET_Y,                   # x, y
+                TARGET_W, TARGET_H,                   # width, height
+                1, 1,                                 # min_width, min_height
+                TARGET_W, TARGET_H,                   # max_width, max_height
+                0, 0,                                 # width_inc, height_inc
+                0, 0, 0, 0,                           # min/max aspect
+                0, 0,                                 # base_width, base_height
+                10,                                   # win_gravity (Static=10)
+            ]
+            win.change_property(atom_normal_hints, atom_cardinal, 32, hints)
+            # Configure window
             win.configure(
                 x=TARGET_X, y=TARGET_Y,
                 width=TARGET_W, height=TARGET_H)
@@ -106,7 +139,7 @@ def main():
                 if ev_wid == root.id and ev_atom == atom_client_list:
                     scan_clients()
                     last_scan = time.monotonic()
-                elif ev_wid in watched and ev_atom == atom_state:
+                elif ev_wid in watched and ev_atom in (atom_state, atom_normal_hints):
                     fix_window(ev_wid)
             continue
 
