@@ -187,27 +187,14 @@ snap_pid=$!
 # Max 9 (Wine/JUCE) auto-sets _NET_WM_STATE_FULLSCREEN when its window
 # is resized to exactly match the monitor (1920x1080), which raises it
 # above Plank's `above` layer.  JUCE also fights WM-level maximize by
-# immediately stripping _NET_WM_STATE_MAXIMIZED.  This loop strips
-# fullscreen from any max.exe window that sets it and resizes to
-# 1918x1078 (2px shy of the monitor) so JUCE doesn't re-trigger
+# immediately stripping _NET_WM_STATE_MAXIMIZED via a ClientMessage.
+# max-fix.py uses Xlib events to catch either state change and resize
+# to 1918x1078 (2px shy of the monitor) so JUCE doesn't re-trigger
 # fullscreen.  The window fills the screen visually but stays in Normal
-# layer where Plank can reveal over it.  Patcher windows (also
-# class=max.exe) get the same treatment.
+# layer where Plank can reveal over it.
 maxfix_pid=
-if command -v xdotool >/dev/null 2>&1 && command -v wmctrl >/dev/null 2>&1; then
-    (
-        while true; do
-            for wid in $(xdotool search --class "max.exe" 2>/dev/null); do
-                state=$(xprop -id "$wid" _NET_WM_STATE 2>/dev/null)
-                if echo "$state" | grep -q "FULLSCREEN"; then
-                    wmctrl -i -r "$wid" -b remove,fullscreen 2>/dev/null
-                    xdotool windowmove "$wid" 2446 342 2>/dev/null
-                    xdotool windowsize "$wid" 1918 1078 2>/dev/null
-                fi
-            done
-            sleep 0.2
-        done
-    ) &
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${HOME}/.config/openbox-music-kiosk/max-fix.py" ]; then
+    "${HOME}/.config/openbox-music-kiosk/max-fix.py" &
     maxfix_pid=$!
 fi
 

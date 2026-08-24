@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""Fix Max 9 (Wine/JUCE) window behavior in the kiosk session.
+
+JUCE does two things that break window management:
+1. When a max.exe window is resized to exactly match the monitor
+   (1920x1080), JUCE auto-sets _NET_WM_STATE_FULLSCREEN, which raises
+   it above Plank's `above` layer.
+2. When Openbox sets _NET_WM_STATE_MAXIMIZED (titlebar maximize button,
+   Alt-F10, etc.), JUCE immediately sends a ClientMessage to strip it,
+   so the maximize never sticks — the window just flashes.
+
+The strip happens faster than any property read can catch it, so this
+script doesn't try to read _NET_WM_STATE on PropertyNotify.  Instead,
+on ANY _NET_WM_STATE PropertyNotify for a real max.exe window (not
+1x1 placeholders), it resizes to 1918x1078 (2px shy of the monitor)
+so JUCE doesn't re-trigger fullscreen.  The window fills the screen
+visually but stays in Normal layer where Plank can reveal over it.
+
+For FULLSCREEN (which persists long enough to read), it also strips
+the state atom directly.
+"""
+from __future__ import annotations
+
+import time
+from Xlib import X, display, error
+import Xlib.Xatom as Xatom
+
+MAX_CLASS = "max.exe"
+TARGET_W = 1918
+TARGET_H = 1078
+TARGET_X = 2446
+TARGET_Y = 342
+MIN_SIZE = 100  # skip 1x1 IME/placeholder windows
+
+
+def class_tokens(win):
+    try:
+        hint = win.get_wm_class()
+    except (error.BadWindow, error.BadDrawable):
+        return []
+    return [c.lower() for c in hint] if hint else []
+
+
+def main():
+    d = display.Display()
+    root = d.screen().root
+    atom_state = d.intern_atom("_NET_WM_STATE")
+    atom_fs = d.intern_atom("_NET_WM_STATE_FULLSCREEN")
+    atom_client_list = d.intern_atom("_NET_CLIENT_LIST")
+
+    watched = {}
+
+    def scan_clients():
+        try:
+            p = root.get_full_property(atom_client_list, X.AnyPropertyType)
+        except error.BadWindow:
+            return
+        live = set()
+        if p:
+            for wid in p.value:
+                wid = int(wid)
+                live.add(wid)
+                if wid in watched:
+                    continue
+                try:
+                    win = d.create_resource_object("window", wid)
+                    if MAX_CLASS not in class_tokens(win):
+                        continue
+                    win.change_attributes(event_mask=X.PropertyChangeMask)
+                    watched[wid] = win
+                except (error.BadWindow, error.BadDrawable):
+                    continue
+        for wid in list(watched):
+            if wid not in live:
+                del watched[wid]
+
+    def fix_window(wid):
+        try:
+            win = d.create_resource_object("window", wid)
+            # Check geometry — skip tiny placeholder windows
+            g = win.get_geometry()
+            if g.width < MIN_SIZE or g.height < MIN_SIZE:
+                return
+            # Strip _NET_WM_STATE (removes fullscreen/maximized)
+            win.change_property(atom_state, Xatom.ATOM, 32, [])
+            # Resize to 1918x1078
+            win.configure(
+                x=TARGET_X, y=TARGET_Y,
+                width=TARGET_W, height=TARGET_H)
+            d.sync()
+        except (error.BadWindow, error.BadDrawable):
+            pass
+
+    root.change_attributes(event_mask=X.PropertyChangeMask)
+    scan_clients()
+
+    while True:
+        if d.pending_events():
+            ev = d.next_event()
+            if getattr(ev, "type", None) == X.PropertyNotify:
+                ev_win = getattr(ev, "window", None)
+                ev_wid = ev_win.id if hasattr(ev_win, "id") else ev_win
+                ev_atom = getattr(ev, "atom", None)
+                if ev_wid == root.id and ev_atom == atom_client_list:
+                    scan_clients()
+                elif ev_wid in watched and ev_atom == atom_state:
+                    fix_window(ev_wid)
+            continue
+
+        time.sleep(0.01)
+        scan_clients()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
