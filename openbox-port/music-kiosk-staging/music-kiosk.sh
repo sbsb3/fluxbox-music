@@ -161,7 +161,7 @@ if command -v dconf >/dev/null 2>&1; then
     dconf write /net/launchpad/plank/docks/kiosk/hide-mode "'auto'" 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/pressure-reveal true 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/unhide-delay 60 2>/dev/null || true
-    dconf write /net/launchpad/plank/docks/kiosk/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'zynaddsubfx-jack.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
+    dconf write /net/launchpad/plank/docks/kiosk/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
 fi
 plankpid=
 if command -v plank >/dev/null 2>&1; then
