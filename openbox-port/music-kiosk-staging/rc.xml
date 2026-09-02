@@ -286,7 +286,16 @@
          <position><x><y> sets the window's TOP-LEFT corner, not its
          center, so 3406x882 (DP-4 center) pushed the window past the
          bottom-right edge.  2456x352 = DP-4 origin (2446x342) + 10px
-         margin.  decor=yes so the user can move/resize the windowed app. -->
+         margin.  decor=yes so the user can move/resize the windowed app.
+
+         SunVox's SunDog engine writes an off-screen "user specified
+         location" into WM_NORMAL_HINTS at startup and XMoveWindow's
+         itself there shortly after mapping, which beats this
+         <position force="yes"> rule (force only applies once, on
+         initial placement).  sunvox-fix.py re-positions the window
+         for the first few seconds after launch -- leave this rule in
+         place so the first paint and the watcher's first read both
+         land on DP-4. -->
     <application class="sunvox" type="normal">
       <decor>yes</decor>
       <position force="yes">

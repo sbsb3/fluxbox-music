@@ -208,9 +208,26 @@ if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${HOME}/.config/openbox-mus
     maxfix_pid=$!
 fi
 
+# SunVox (SunDog engine via SDL2) writes an off-screen
+# `user specified location` into WM_NORMAL_HINTS at startup and
+# XMoveWindow's itself there shortly after mapping, so the rc.xml
+# <position force="yes"> rule (which only fires on initial placement)
+# can't keep it on DP-4.  sunvox-fix.py watches MapNotify /
+# ConfigureNotify / WM_NORMAL_HINTS on sunvox class windows for the first
+# few seconds after launch and force-positions them at DP-4 top-left
+# + 10px margin (2456, 352) at the user's saved 1920x1062 size, and
+# strips MAXIMIZED so the window stays windowed.  After the per-window
+# deadline elapses the user can move/resize freely.
+sunvoxfix_pid=
+if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${HOME}/.config/openbox-music-kiosk/sunvox-fix.py" ]; then
+    "${HOME}/.config/openbox-music-kiosk/sunvox-fix.py" &
+    sunvoxfix_pid=$!
+fi
+
 cleanup() {
     kill "$snap_pid" 2>/dev/null || true
     kill "$maxfix_pid" 2>/dev/null || true
+    kill "$sunvoxfix_pid" 2>/dev/null || true
     [ -n "$plankpid" ] && kill "$plankpid" 2>/dev/null || true
     pkill -x plank 2>/dev/null || true
     kill "$obpid" 2>/dev/null || true

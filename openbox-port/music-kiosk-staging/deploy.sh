@@ -9,6 +9,7 @@
 #   music-kiosk-logout.desktop -> ~/.local/share/applications/             (user)
 #   plank-kiosk/launchers -> ~/.config/plank/kiosk/launchers               (user)
 #   max-fix.py            -> ~/.config/openbox-music-kiosk/max-fix.py       (user)
+#   sunvox-fix.py         -> ~/.config/openbox-music-kiosk/sunvox-fix.py    (user)
 #
 # System paths are written via sudo (or directly if already root).
 
@@ -24,6 +25,7 @@ src_logout_sh="$here/music-kiosk-logout.sh"
 src_logout_desktop="$here/music-kiosk-logout.desktop"
 src_plank="$here/plank-kiosk/launchers"
 src_maxfix="$here/max-fix.py"
+src_sunvoxfix="$here/sunvox-fix.py"
 
 dst_sh=/usr/local/bin/music-kiosk
 dst_rc="$HOME/.config/openbox-music-kiosk/rc.xml"
@@ -33,7 +35,7 @@ dst_logout_sh=/usr/local/bin/music-kiosk-logout
 dst_logout_desktop="$HOME/.local/share/applications/music-kiosk-logout.desktop"
 dst_plank="$HOME/.config/plank/kiosk/launchers"
 
-for f in "$src_sh" "$src_rc" "$src_desktop" "$src_sudoers" "$src_logout_sh" "$src_logout_desktop" "$src_maxfix"; do
+for f in "$src_sh" "$src_rc" "$src_desktop" "$src_sudoers" "$src_logout_sh" "$src_logout_desktop" "$src_maxfix" "$src_sunvoxfix"; do
     [ -f "$f" ] || { echo "missing source: $f" >&2; exit 1; }
 done
 [ -d "$src_plank" ] || { echo "missing source dir: $src_plank" >&2; exit 1; }
@@ -61,6 +63,7 @@ do_install 440 "$src_sudoers"         "$dst_sudoers"
 do_install 755 "$src_logout_sh"       "$dst_logout_sh"
 do_install 644 "$src_logout_desktop"  "$dst_logout_desktop"
 do_install 755 "$src_maxfix"          "$(dirname "$dst_rc")/max-fix.py"
+do_install 755 "$src_sunvoxfix"       "$(dirname "$dst_rc")/sunvox-fix.py"
 
 # Plank dockitems go in as user files (no sudo). --target-directory keeps
 # this plain-POSIX (no cp -t flag, which some platforms lack).

@@ -367,6 +367,16 @@ Kiosk specifics refined through many commits:
   watches `WM_NORMAL_HINTS`, offsets for the 18px frame so the title bar
   stays visible, and only acts on fullscreened/maximized windows (leaving
   helper patches alone). Alt-Tab is also bound in the kiosk `rc.xml`.
+- **`sunvox-fix.py`** — Xlib daemon that pins SunVox at DP-4 top-left
+  (`2456,352` at `1920x1062`) on launch. SunVox's SunDog engine writes
+  an off-screen `user specified location` into `WM_NORMAL_HINTS` at
+  startup and `XMoveWindow`s itself there shortly after mapping, so the
+  `<position force="yes">` rule (which only applies once, on initial
+  placement) loses. The watcher catches `MapNotify`/`ConfigureNotify`/
+  `WM_NORMAL_HINTS` on sunvox class windows for the first ~3 seconds
+  after launch and force-positions them; after the per-window deadline
+  elapses the user can move/resize freely. Strips `MAXIMIZED` so the
+  window stays windowed (matching the `rc.xml` intent).
 - A `.sudoers` file lets the logout launcher terminate the session without a
   password.
 
