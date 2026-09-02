@@ -148,10 +148,20 @@ fi
 # window is focused.  pressure-reveal=true + unhide-delay=60 match the
 # working dock1 config: the user pushes the mouse against the bottom
 # edge and the dock appears after ~60ms of pressure.
+#
+# dock-items: re-asserted here so the SunVox icon sits next to BitWig
+# regardless of what order a previous session left it in.  Plank's drag-
+# to-reorder UI is not usable from the kiosk (no mouse interaction
+# during a Renoise fullscreen session), and `pinned-only` plus the
+# install of plank-kiosk/launchers/*.dockitem makes the file order the
+# fallback source for new items -- which is alphabetical, so SunVox
+# ('s') ends up at the far right.  Overriding dock-items explicitly
+# here puts the DAWs together: Renoise, BitWig, SunVox, Max 9.
 if command -v dconf >/dev/null 2>&1; then
     dconf write /net/launchpad/plank/docks/kiosk/hide-mode "'auto'" 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/pressure-reveal true 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/unhide-delay 60 2>/dev/null || true
+    dconf write /net/launchpad/plank/docks/kiosk/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'zynaddsubfx-jack.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
 fi
 plankpid=
 if command -v plank >/dev/null 2>&1; then
