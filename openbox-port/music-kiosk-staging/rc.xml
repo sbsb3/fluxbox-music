@@ -80,6 +80,9 @@
     <keybind key="W-r">
       <action name="Execute"><command>rofi -show run</command></action>
     </keybind>
+    <keybind key="W-t">
+      <action name="Execute"><command>/home/sb/.local/bin/clock-pop</command></action>
+    </keybind>
   </keyboard>
 
   <mouse>
