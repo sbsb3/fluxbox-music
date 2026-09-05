@@ -177,23 +177,76 @@ fi
 # Plank like before, since it's the heaviest app and max-fix.py only
 # engages when its window actually appears. sunvox-fix.py (started
 # below) is window-driven, so it picks up an auto-launched SunVox too.
-# Short stagger so all five don't try to claim the JACK/Pulse/Audio
-# device at exactly the same instant.
-if command -v gajim >/dev/null 2>&1; then
-    ( sleep 2; gajim >/dev/null 2>&1 ) &
-fi
-if command -v audacious >/dev/null 2>&1; then
-    ( sleep 2; audacious >/dev/null 2>&1 ) &
-fi
-if command -v renoise >/dev/null 2>&1; then
-    ( sleep 3; renoise >/dev/null 2>&1 ) &
-fi
-if command -v bitwig-studio >/dev/null 2>&1; then
-    ( sleep 4; bitwig-studio >/dev/null 2>&1 ) &
-fi
-if command -v sunvox >/dev/null 2>&1; then
-    ( sleep 5; sunvox >/dev/null 2>&1 ) &
-fi
+#
+# ONE sequential launcher subshell, not five parallel sleep-races:
+# 1. It first waits for Plank's dock window (and lets BAMF settle 2s
+#    more) before launching anything. The old fixed +2..5s delays raced
+#    Plank's own startup: a window that maps while Plank is still
+#    loading dock items / activating BAMF fails the running-window ->
+#    pinned-.dockitem association, and Plank then shows TWO icons (the
+#    pinned SunVox/Renoise plus a second running one) for the whole
+#    session. Renoise additionally needs StartupWMClass=Renoise in
+#    ~/.local/share/applications/renoise.desktop (its WM_CLASS instance
+#    is "renoise-3.5.4", which no desktop id matches; click-launch used
+#    to hide this because Plank associates the PID it spawned itself).
+# 2. Audacious is retried: on a cold boot the first attempt can die
+#    with an error while the disk is still saturated -- it starts fine
+#    when relaunched a few seconds later. Up to 3 attempts, 3s apart;
+#    its output goes to the log (not /dev/null) so the actual error is
+#    visible if it ever keeps failing.
+# 3. The apps stay staggered so they don't all claim the JACK/Pulse
+#    audio device at the same instant.
+(
+    if [ -n "$plankpid" ]; then
+        # 15s max (60 x 0.25s); fall through if plank never maps so the
+        # apps still start. Search by PID so a stale plank dying from the
+        # pkill above can never satisfy the wait. Without xdotool, fall
+        # back to a fixed wait.
+        if command -v xdotool >/dev/null 2>&1; then
+            i=0
+            while [ "$i" -lt 60 ]; do
+                kill -0 "$plankpid" 2>/dev/null || break
+                xdotool search --pid "$plankpid" >/dev/null 2>&1 && break
+                sleep 0.25
+                i=$((i + 1))
+            done
+            sleep 2
+        else
+            sleep 10
+        fi
+    else
+        sleep 5
+    fi
+
+    if command -v gajim >/dev/null 2>&1; then
+        gajim >/dev/null 2>&1 &
+    fi
+    sleep 2
+
+    if command -v audacious >/dev/null 2>&1; then
+        tries=0
+        while :; do
+            audacious >>"$log" 2>&1 &
+            sleep 3
+            pgrep -x audacious >/dev/null 2>&1 && break
+            tries=$((tries + 1))
+            echo "music-kiosk: audacious died on attempt $tries" >>"$log"
+            [ "$tries" -ge 3 ] && break
+        done
+    fi
+
+    if command -v renoise >/dev/null 2>&1; then
+        renoise >/dev/null 2>&1 &
+        sleep 2
+    fi
+    if command -v bitwig-studio >/dev/null 2>&1; then
+        bitwig-studio >/dev/null 2>&1 &
+        sleep 2
+    fi
+    if command -v sunvox >/dev/null 2>&1; then
+        sunvox >/dev/null 2>&1 &
+    fi
+) &
 
 # Background reaper: openbox-autostart (/usr/lib/openbox/openbox-autostart)
 # runs UNCONDITIONALLY before the user autostart guard: it sets the root
