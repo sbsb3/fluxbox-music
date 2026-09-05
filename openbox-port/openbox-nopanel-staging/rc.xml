@@ -202,7 +202,7 @@
        session but a clock window is still useful.  Same binding as the
        music-kiosk rc.xml. -->
   <keybind key="W-t"><action name="Execute"><command>/home/sb/.local/bin/clock-pop</command></action></keybind>
-  <keybind key="W-c"><action name="Execute"><command>gsimplecal</command></action></keybind>
+  <keybind key="W-Shift-c"><action name="Execute"><command>gsimplecal</command></action></keybind>
 </keyboard>
 
 <mouse>
