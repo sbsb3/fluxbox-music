@@ -309,6 +309,21 @@
         <y>352</y>
       </position>
     </application>
+    <!-- xclock (clock-pop, bound W-t): centered on the primary monitor.
+         clock-pop hard-codes xclock -geometry 260x80-40-60 which pins it
+         to HDMI-0's bottom-left; this rule overrides that initial
+         geometry and re-centers the window on DP-4 (1920x1080 at
+         +2446+342).  force="yes" is required so Openbox repositions the
+         window after the WM honors the -geometry hint on first map. -->
+    <application class="XClock" type="normal">
+      <decor>yes</decor>
+      <position force="yes">
+        <x>center</x>
+        <y>center</y>
+        <monitor>DP-4</monitor>
+      </position>
+    </application>
+
     <application class="max.exe" type="normal">
       <decor>yes</decor>
     </application>
