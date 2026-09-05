@@ -293,7 +293,7 @@
          itself there shortly after mapping, which beats this
          <position force="yes"> rule (force only applies once, on
          initial placement).  sunvox-fix.py re-positions the window
-         for the first few seconds after launch -- leave this rule in
+         for the first few seconds after launch — leave this rule in
          place so the first paint and the watcher's first read both
          land on DP-4. -->
     <application class="sunvox" type="normal">
