@@ -169,11 +169,20 @@ fi
 # install of plank-kiosk/launchers/*.dockitem makes the file order the
 # fallback source for new items -- which is alphabetical, so SunVox
 # ('s') ends up at the far right.  Overriding dock-items explicitly
-# here puts the DAWs together: Renoise, BitWig, SunVox, Max 9.
+# here puts the DAWs together: Renoise, Bitwig, SunVox, Max 9.
+#
+# pinned-only=true: see the matching block in openbox-nopanel.sh for
+# the full rationale.  Without it, a running app that Plank can't
+# match to a pinned dockitem (typically because BAMF is still
+# warming up when the auto-launched SunVox maps) is auto-added to
+# the dock as a second icon -- "two SunVox icons".  pinned-only=true
+# stops that and matches the kiosk's intended behavior: every app
+# the user can launch is already pinned.
 if command -v dconf >/dev/null 2>&1; then
     dconf write /net/launchpad/plank/docks/kiosk/hide-mode "'auto'" 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/pressure-reveal true 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/unhide-delay 60 2>/dev/null || true
+    dconf write /net/launchpad/plank/docks/kiosk/pinned-only true 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
 fi
 plankpid=

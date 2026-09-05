@@ -186,6 +186,19 @@ fi
 # ('s') ends up at the far right.  Overriding dock-items explicitly
 # here puts the DAWs together: Renoise, Bitwig, SunVox, Max 9.
 #
+# pinned-only=true: when a running app fails to be matched to one of
+# the dockitems above (Plank's running-window -> pinned-dockitem
+# association runs through BAMF, which is dbus-activated and takes
+# ~1-2s to register after the X session comes up -- and the auto-
+# launched SunVox below maps in that window), Plank's default of
+# pinned-only=false auto-adds the unmatched app as a NEW dock entry,
+# so the user sees two SunVox icons: the pinned one and a freshly-
+# added "running only" one.  pinned-only=true tells Plank to NEVER
+# add new entries -- unmatched running windows just don't appear in
+# the dock, which is the intended kiosk behavior (every app the user
+# can launch is already pinned).  Set explicitly here because
+# Plank's compiled-in default is pinned-only=false.
+#
 # Music-kiosk has its own `kiosk` dock; this session reuses the same
 # launchers via `plank -n nopanel`, with a dock directory the user
 # can change by editing --launcher-folder below (default
@@ -196,6 +209,7 @@ if command -v plank >/dev/null 2>&1; then
         dconf write /net/launchpad/plank/docks/nopanel/hide-mode "'auto'" 2>/dev/null || true
         dconf write /net/launchpad/plank/docks/nopanel/pressure-reveal true 2>/dev/null || true
         dconf write /net/launchpad/plank/docks/nopanel/unhide-delay 60 2>/dev/null || true
+        dconf write /net/launchpad/plank/docks/nopanel/pinned-only true 2>/dev/null || true
         dconf write /net/launchpad/plank/docks/nopanel/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
     fi
     ( sleep 1; exec plank -n nopanel ) &
