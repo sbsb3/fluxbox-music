@@ -186,18 +186,15 @@ fi
 # ('s') ends up at the far right.  Overriding dock-items explicitly
 # here puts the DAWs together: Renoise, Bitwig, SunVox, Max 9.
 #
-# pinned-only=true: when a running app fails to be matched to one of
-# the dockitems above (Plank's running-window -> pinned-dockitem
-# association runs through BAMF, which is dbus-activated and takes
-# ~1-2s to register after the X session comes up -- and the auto-
-# launched SunVox below maps in that window), Plank's default of
-# pinned-only=false auto-adds the unmatched app as a NEW dock entry,
-# so the user sees two SunVox icons: the pinned one and a freshly-
-# added "running only" one.  pinned-only=true tells Plank to NEVER
-# add new entries -- unmatched running windows just don't appear in
-# the dock, which is the intended kiosk behavior (every app the user
-# can launch is already pinned).  Set explicitly here because
-# Plank's compiled-in default is pinned-only=false.
+# pinned-only: left at Plank's default (false) on purpose -- running
+# apps the user starts that aren't pinned DO appear in the dock
+# (e.g. opening wezterm from the root-menu for a quick command adds
+# a wezterm entry alongside the pinned org.wezfurlong.wezterm.dockitem).
+# The previous "duplicate SunVox icon" bug came from Plank auto-
+# adding SunVox BEFORE BAMF had registered it: with pinned-only=false
+# and no BAMF match, Plank adds a second dockitem entry.  Fix below
+# in the launcher subshell: wait for BAMF to be ready before auto-
+# launching SunVox, so Plank's first match attempt sees BAMF up.
 #
 # Music-kiosk has its own `kiosk` dock; this session reuses the same
 # launchers via `plank -n nopanel`, with a dock directory the user
@@ -209,7 +206,13 @@ if command -v plank >/dev/null 2>&1; then
         dconf write /net/launchpad/plank/docks/nopanel/hide-mode "'auto'" 2>/dev/null || true
         dconf write /net/launchpad/plank/docks/nopanel/pressure-reveal true 2>/dev/null || true
         dconf write /net/launchpad/plank/docks/nopanel/unhide-delay 60 2>/dev/null || true
-        dconf write /net/launchpad/plank/docks/nopanel/pinned-only true 2>/dev/null || true
+        # pinned-only: left at Plank's default (false) so running apps
+        # the user starts that aren't pinned do appear in the dock.
+        # The duplicate-SunVox-icon bug is fixed instead by waiting
+        # for BAMF to be ready before auto-launching SunVox (see the
+        # launcher subshell below) -- with BAMF up, Plank can match
+        # the SunVox window to the pinned sunvox.dockitem instead of
+        # auto-adding a second entry.
         dconf write /net/launchpad/plank/docks/nopanel/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
     fi
     ( sleep 1; exec plank -n nopanel ) &
@@ -315,7 +318,40 @@ fi
         bitwig-studio >/dev/null 2>&1 &
         sleep 2
     fi
+
+    # Wait for BAMF before SunVox.  Plank matches running windows to
+    # pinned dockitems by asking BAMF for the window's desktop file.
+    # BAMF is dbus-activated and only spawns after a client queries
+    # it; until it does, Plank falls back to auto-adding the
+    # unmatched window as a brand-new dockitem -- "two SunVox icons"
+    # even though only one sunvox process exists.  By the time we get
+    # here (~12-15s into the launcher subshell: Plank mapped ~2s ago,
+    # Audacious came up ~5s ago, Renoise/Bitwig staggered 2s each)
+    # Plank itself has already started up and queried BAMF once
+    # (just by mapping its dock window), so bamfdaemon is normally
+    # already running.  Belt-and-suspenders: wait up to 10s for the
+    # dbus method org.ayatana.bamf.matcher.RunningApplicationsDesktopFiles
+    # to become callable before launching SunVox, so any further
+    # window->dockitem match Plank does on the freshly-mapped SunVox
+    # has BAMF ready.  No-op if bamf isn't installed.
     if command -v sunvox >/dev/null 2>&1; then
+        i=0
+        while [ "$i" -lt 40 ]; do
+            if ! pgrep -x bamfdaemon >/dev/null 2>&1; then
+                # bamfdaemon not installed on this system -- nothing
+                # to wait for.  Plank won't have a BAMF match path
+                # anyway; just break out.
+                break
+            fi
+            if gdbus call --session --dest org.ayatana.bamf \
+                --object-path /org/ayatana/bamf/matcher \
+                --method org.ayatana.bamf.matcher.RunningApplicationsDesktopFiles \
+                >/dev/null 2>&1; then
+                break
+            fi
+            sleep 0.25
+            i=$((i + 1))
+        done
         sunvox >/dev/null 2>&1 &
     fi
 ) &
