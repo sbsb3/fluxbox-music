@@ -363,9 +363,10 @@ Kiosk specifics refined through many commits:
 - **`max-fix.py`** — a pure-Xlib event-driven daemon that catches Max 9's
   JUCE toolkit fighting the WM: JUCE strips fullscreen/maximized state and
   auto-sets fullscreen over Plank on patcher windows. The daemon resizes
-  offending windows to `1918x1078` (2px shy) to avoid JUCE auto-fullscreen,
-  watches `WM_NORMAL_HINTS`, offsets for the 18px frame so the title bar
-  stays visible, and only acts on fullscreened/maximized windows (leaving
+  offending windows to `1920x1060` at `(2446, 360)` — width flush with the
+  monitor so the frame's right edge meets DP-4's, height 20px shy (18px
+  title-bar offset + 2px shy) to avoid JUCE auto-fullscreen. Watches
+  `WM_NORMAL_HINTS`, only acts on fullscreened/maximized windows (leaving
   helper patches alone). Alt-Tab is also bound in the kiosk `rc.xml`.
 - **`sunvox-fix.py`** — Xlib daemon that pins SunVox at DP-4 top-left
   (`2456,352` at `1920x1062`) on launch. SunVox's SunDog engine writes

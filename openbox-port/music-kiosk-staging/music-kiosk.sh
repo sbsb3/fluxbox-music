@@ -225,9 +225,11 @@ snap_pid=$!
 # above Plank's `above` layer.  JUCE also fights WM-level maximize by
 # immediately stripping _NET_WM_STATE_MAXIMIZED via a ClientMessage.
 # max-fix.py uses Xlib events to catch either state change and resize
-# to 1918x1078 (2px shy of the monitor) so JUCE doesn't re-trigger
-# fullscreen.  The window fills the screen visually but stays in Normal
-# layer where Plank can reveal over it.
+# to 1920x1060 at (2446, 360) — width matches the monitor (frame right
+# edge flush with DP-4), height is 20px shy (18px title bar + 2px shy so
+# the frame doesn't exactly match monitor height and re-trigger JUCE
+# fullscreen).  The window fills the screen horizontally with a visible
+# title bar but stays in Normal layer where Plank can reveal over it.
 maxfix_pid=
 if python3 -c "import Xlib" >/dev/null 2>&1 && [ -x "${HOME}/.config/openbox-music-kiosk/max-fix.py" ]; then
     "${HOME}/.config/openbox-music-kiosk/max-fix.py" &

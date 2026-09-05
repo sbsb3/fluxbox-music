@@ -17,10 +17,11 @@ state change occurs, it checks whether the window actually needs fixing:
     resize it.
   - Otherwise (small helper/patch windows), leave it alone.
 
-The resize target is 1918x1060 at 2446,360 — 2px shy of the monitor
-and offset by 18px for the title bar frame.  The window fills the
-screen visually with a visible title bar but stays in Normal layer
-where Plank can reveal over it.
+The resize target is 1920x1060 at 2446,360 — width matches the monitor
+exactly (frame right edge flush with DP-4's right edge), height is 20px
+shy (18px title bar frame + 2px to avoid JUCE auto-fullscreen).  The
+window fills the screen horizontally with a visible title bar but stays
+in Normal layer where Plank can reveal over it.
 """
 from __future__ import annotations
 
@@ -29,7 +30,7 @@ from Xlib import X, display, error
 import Xlib.Xatom as Xatom
 
 MAX_CLASS = "max.exe"
-TARGET_W = 1918
+TARGET_W = 1920
 TARGET_H = 1060
 TARGET_X = 2446
 TARGET_Y = 360
