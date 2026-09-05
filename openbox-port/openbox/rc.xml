@@ -165,7 +165,7 @@
   <keybind key="W-s"><action name="Execute"><command>sunvox</command></action></keybind>
   <keybind key="A-W-r"><action name="Execute"><command>renoise</command></action></keybind>
   <keybind key="W-b"><action name="Execute"><command>bitwig-studio</command></action></keybind>
-  <keybind key="W-c"><action name="Execute"><command>carla</command></action></keybind>
+  <keybind key="W-c"><action name="Execute"><command>gsimplecal</command></action></keybind>
   <keybind key="W-g"><action name="Execute"><command>qpwgraph</command></action></keybind>
   <keybind key="W-v"><action name="Execute"><command>pavucontrol</command></action></keybind>
   <keybind key="W-h"><action name="Execute"><command>hydrogen</command></action></keybind>
@@ -194,7 +194,7 @@
   <keybind key="XF86AudioMute"><action name="Execute"><command>/home/sb/.local/bin/audacious-vol mute</command></action></keybind>
 
   <keybind key="Print"><action name="Execute"><command>scrot "/home/sb/Pictures/%Y-%m-%d-%H%M%S.png"</command></action></keybind>
-  <keybind key="W-Shift-c"><action name="Execute"><command>gsimplecal</command></action></keybind>
+  <keybind key="W-c"><action name="Execute"><command>gsimplecal</command></action></keybind>
 
   <!-- Reload / leave -->
   <keybind key="W-S-r"><action name="Execute"><command>openbox --reconfigure</command></action></keybind>
