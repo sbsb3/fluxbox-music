@@ -77,6 +77,9 @@
     <keybind key="C-A-End">
       <action name="Exit"/>
     </keybind>
+    <keybind key="W-r">
+      <action name="Execute"><command>rofi -show run</command></action>
+    </keybind>
   </keyboard>
 
   <mouse>
