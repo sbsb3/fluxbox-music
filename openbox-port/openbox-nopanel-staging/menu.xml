@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Openbox port of ~/.fluxbox/menu and ~/.fluxbox/windowmenu.
-  Icons: referenced in place from ~/.fluxbox/pixmaps (not copied) - see
-  openbox-port/PORT-NOTES.md for why that directory is fine to leave there.
+  Openbox root-menu / workspace-menu for the Openbox No Panel session
+  (logged in via /usr/local/bin/openbox-nopanel).  Same content as the
+  Openbox Music session's menu.xml, minus the Panel submenu (this
+  session has no tint2 and no panel-size.sh to toggle).  Icons are
+  referenced in place from ~/.fluxbox/pixmaps (not copied) - see
+  openbox-port/PORT-NOTES.md for why that directory is fine to leave
+  there.
 -->
 <openbox_menu xmlns="http://openbox.org/3.4/menu">
 
@@ -150,21 +154,19 @@
     <item label="GTK and icons…"><action name="Execute"><command>xfce4-appearance-settings</command></action></item>
   </menu>
 
+  <!-- Panel: this session has no tint2, only `plank -n nopanel` as its
+       dock.  "Kill plank" drops the dock for the rest of the session
+       (Plank has an autorestart loop, so it will come back at next
+       Openbox No Panel login).  "Start plank" is a re-launch for the
+       current session in case the kill command above ever leaves it
+       dead for some reason.  References by name so this never
+       accidentally targets a `plank -n music` / `plank -n kiosk` from
+       a previous session. -->
   <menu id="panel-menu" label="Panel">
-    <item label="Normal (56px)"><action name="Execute"><command>/home/sb/.openbox-music/panel-size.sh normal</command></action></item>
-    <item label="Compact (30px)"><action name="Execute"><command>/home/sb/.openbox-music/panel-size.sh compact</command></action></item>
-    <item label="Toggle size"><action name="Execute"><command>/home/sb/.openbox-music/panel-size.sh toggle</command></action></item>
+    <item label="Kill plank"><action name="Execute"><command>pkill -f 'plank -n nopanel'</command></action></item>
+    <item label="Start plank"><action name="Execute"><command>plank -n nopanel</command></action></item>
     <separator/>
-    <!-- Kill tint2: drops the panel for the rest of the session.  The
-         ~/.config/openbox/autostart tint2-watchdog (panel-size.sh's
-         crash-relaunch loop) will restart it within ~2s.  Use this
-         if tint2 is wedged and crashing repeatedly and the user
-         wants to suppress the bouncing window while they decide
-         what to do, or before quitting to the greeter.  "Restart
-         tint2" does an immediate pkill+panel-size.sh normal so the
-         watchdog's restart-after-1s-dead window doesn't even apply. -->
-    <item label="Kill tint2"><action name="Execute"><command>pkill -x tint2</command></action></item>
-    <item label="Restart tint2"><action name="Execute"><command>/home/sb/.openbox-music/panel-size.sh normal</command></action></item>
+    <item label="Kill tint2 (if stale)"><action name="Execute"><command>pkill -x tint2</command></action></item>
   </menu>
 
   <menu id="audacious-menu" label="Audacious">
@@ -187,10 +189,11 @@
          this system, so there is no Openbox settings GUI to launch. Edit
          rc.xml by hand and Reload config below. -->
     <menu id="themes-menu"/>
+    <menu id="panel-menu"/>
     <item label="Reload config"><action name="Reconfigure"/></item>
     <item label="Restart Openbox"><action name="Restart"/></item>
     <separator/>
-    <item label="Leave music session"><action name="Exit"><prompt>no</prompt></action></item>
+    <item label="Leave Openbox No Panel"><action name="Exit"><prompt>no</prompt></action></item>
   </menu>
 </menu>
 

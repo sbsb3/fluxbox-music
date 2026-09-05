@@ -13,6 +13,12 @@
 # runs plain `openbox --config-file ...`, so this hook fires there too and
 # was clobbering the kiosk's own xrandr layout (via autorandr --change
 # --default) and relaunching tint2 after the kiosk had already killed it.
+# The Music Kiosk session (music-kiosk.sh) and the Openbox No Panel session
+# (openbox-nopanel.sh) are the same story again: their own xrandr layout,
+# wallpaper and DAW pre-seeding would be clobbered if this hook ran
+# (autorandr --change re-applying the saved layout, pcmanfm --desktop
+# drawing icons, tint2 launching, ...), so they trip the OPENBOX_MUSIC_KIOSK
+# and OPENBOX_NOPANEL_SESSION guards above to stand down.
 #
 # IMPORTANT: unlike ~/.openbox-music/startup, this file must NOT launch
 # Openbox itself (it's already running) and must NOT block with `wait` --
@@ -20,7 +26,7 @@
 # autostart (gajim, arch-update-tray, etc.), so everything long-running
 # here backgrounds itself and returns.
 
-if [ "${OPENBOX_MUSIC_SESSION:-}" = "1" ] || [ "${OPENBOX_RENOISE_KIOSK:-}" = "1" ]; then
+if [ "${OPENBOX_MUSIC_SESSION:-}" = "1" ] || [ "${OPENBOX_RENOISE_KIOSK:-}" = "1" ] || [ "${OPENBOX_MUSIC_KIOSK:-}" = "1" ] || [ "${OPENBOX_NOPANEL_SESSION:-}" = "1" ]; then
     exit 0
 fi
 

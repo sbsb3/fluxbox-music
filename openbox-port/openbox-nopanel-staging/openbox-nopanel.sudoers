@@ -1,0 +1,20 @@
+# /etc/sudoers.d/openbox-nopanel
+#
+# Lets openbox-nopanel.sh neutralize autorandr.service for the duration
+# of the session without blocking on a password (the kiosk has no
+# terminal to answer one). See openbox-nopanel.sh for why: a system-
+# wide udev rule (/usr/lib/udev/rules.d/40-monitor-hotplug.rules)
+# restarts autorandr.service on every DRM "change" event, and the
+# kiosk's own xrandr call is exactly such an event -- autorandr.service
+# would otherwise reapply the saved 3-monitor "default" profile
+# moments later, undoing the kiosk layout before the DAWs even finish
+# loading.
+#
+# Same rules as music-kiosk.sudoers; duplicated here so this staging
+# folder is self-contained (deploy.sh installs this file on its own).
+# Install with: sudo install -m 440 openbox-nopanel.sudoers /etc/sudoers.d/openbox-nopanel
+# (deploy.sh does this for you, validating with visudo -c first.)
+sb ALL=(root) NOPASSWD: /usr/bin/systemctl mask --now autorandr.service
+sb ALL=(root) NOPASSWD: /usr/bin/systemctl unmask autorandr.service
+sb ALL=(root) NOPASSWD: /usr/bin/systemctl start autorandr.service
+sb ALL=(root) NOPASSWD: /usr/bin/systemctl start --no-block autorandr.service

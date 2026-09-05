@@ -1,30 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Openbox port of ~/.fluxbox for the music-production session.
-  Ported from: ~/.fluxbox/keys, ~/.fluxbox/apps, ~/.fluxbox/init.
-  See ~/.fluxbox/openbox-port-plan.md for the gap numbers referenced below,
-  and openbox-port/PORT-NOTES.md for the full settings-dropped inventory.
+<!-- ~/.config/openbox-nopanel/rc.xml
+     Openbox No Panel: music-production Openbox session that runs the
+     openbox-music-session keybindings (W-1/2 workspace switch,
+     W-Space root-menu, W-F4 close, W-F10 maximize, ...) and the
+     restored Openbox root-menu / workspace-menu, but with NO tint2
+     panel and NO Plank dock.  Same per-app rules as Music Kiosk
+     (Renoise/Bitwig maximize on DP-4, SunVox on DP-4 top-left,
+     dialogs/utility windows in the `above` layer).
 
-  Super (Mod4/"W") is the session modifier so Ctrl/Alt stay available to DAWs.
-  Function-key workspace binds from stock defaults are omitted on purpose
-  (Renoise, Bitwig, SunVox, and Max all use F-keys).
--->
-<!-- Namespace intentionally left at 3.4/rc: that is what this system's
-     installed Openbox 3.6.1 ships in /etc/xdg/openbox/rc.xml, the URI has
-     not changed since. -->
+     The autostart guard OPENBOX_NOPANEL_SESSION=1 in
+     ~/.config/openbox/autostart keeps that hook from relaunching
+     tint2/plank/pcmanfm here.  It stands down silently.
+
+     Super (Mod4/"W") is the session modifier so Ctrl/Alt stay available
+     to the DAWs.  Function-key workspace binds from stock defaults are
+     omitted on purpose (Renoise, Bitwig, SunVox, and Max all use
+     F-keys). -->
 <openbox_config xmlns="http://openbox.org/3.4/rc"
 		xmlns:xi="http://www.w3.org/2001/XInclude">
 
 <resistance>
-  <!-- init: session.screen0.edgeSnapThreshold: 8 -->
   <strength>8</strength>
   <screen_edge_strength>8</screen_edge_strength>
 </resistance>
 
 <focus>
-  <!-- init: focusNewWindows true -->
   <focusNew>yes</focusNew>
-  <!-- init: focusModel ClickFocus (i.e. not follow-mouse) -->
   <followMouse>no</followMouse>
   <focusLast>yes</focusLast>
   <underMouse>no</underMouse>
@@ -32,9 +33,9 @@
 </focus>
 
 <placement>
-  <!-- init: windowPlacement RowSmartPlacement. Openbox has no row/col-direction
-       knob for Smart placement (rowPlacementDirection/colPlacementDirection
-       dropped, no equivalent) - Smart + top-left start is the closest match. -->
+  <!-- Smart placement (top-left start) is the closest Openbox match
+       to Fluxbox's RowSmartPlacement.  New windows open on the RandR
+       primary monitor (DP-4). -->
   <policy>Smart</policy>
   <center>no</center>
   <monitor>Primary</monitor>
@@ -42,16 +43,17 @@
 </placement>
 
 <theme>
-  <name>ClearlooksDarkMenu</name>
-  <titleLayout>NLIMC</titleLayout>
-  <keepBorder>yes</keepBorder>
-  <animateIconify>yes</animateIconify>
-  <!-- ClearlooksDarkMenu does not declare a font.size in themerc, so
+  <!-- Same theme as the existing openbox-music session.
+       modernflatdark does not declare a font.size in themerc, so
        without explicit <font> blocks here Openbox falls back to its
        compiled-in ~8px defaults.  Menu text is tiny.  Size 12 for
        items, 13 for the menu header; same family/weight as the
        window labels so it doesn't look out of place in the active
        window's title bar. -->
+  <name>modernflatdark</name>
+  <titleLayout>NLIMC</titleLayout>
+  <keepBorder>yes</keepBorder>
+  <animateIconify>yes</animateIconify>
   <font place="ActiveWindow">
     <name>sans</name>
     <size>8</size>
@@ -91,7 +93,9 @@
 </theme>
 
 <desktops>
-  <!-- init: session.screen0.workspaces 2 / workspaceNames Internet,Audio -->
+  <!-- Two desktops, same names as the openbox-music session: Internet
+       and Audio.  Kiosk users don't need more, and it keeps the
+       workspace-menu (root-menu -> Workspaces) small. -->
   <number>2</number>
   <firstdesk>1</firstdesk>
   <names>
@@ -102,7 +106,6 @@
 </desktops>
 
 <resize>
-  <!-- init: opaqueResize false -> Fluxbox showed an outline, not live content -->
   <drawContents>no</drawContents>
   <popupShow>Nonpixel</popupShow>
   <popupPosition>Center</popupPosition>
@@ -117,7 +120,7 @@
 
 <dock>
   <!-- Unused: tint2/Plank are ordinary top-level dock windows, not a
-       Fluxbox-slit-style Openbox dock app. Left at stock defaults. -->
+       Fluxbox-slit-style Openbox dock app.  Left at stock defaults. -->
   <position>TopLeft</position>
   <floatingX>0</floatingX>
   <floatingY>0</floatingY>
@@ -145,9 +148,7 @@
   <keybind key="W-Left"><action name="SendToDesktop"><to>previous</to><wrap>yes</wrap></action></keybind>
   <keybind key="W-Right"><action name="SendToDesktop"><to>next</to><wrap>yes</wrap></action></keybind>
 
-  <!-- Window cycling (Alt-Tab is standard and rarely claimed as a DAW shortcut).
-       Delegate to the skippy-xd-based switcher instead of Openbox's built-in
-       NextWindow/PreviousWindow. -->
+  <!-- Window cycling: Alt-Tab delegates to the skippy-xd-based switcher. -->
   <keybind key="A-Tab">
     <action name="Execute"><command>/home/sb/scripts/alttab.sh next</command></action>
   </keybind>
@@ -158,8 +159,6 @@
   <!-- Session launchers (Super + key) -->
   <keybind key="W-Return"><action name="Execute"><command>wezterm</command></action></keybind>
   <keybind key="W-space"><action name="ShowMenu"><menu>root-menu</menu></action></keybind>
-  <!-- gap #3: fbrun has no Openbox equivalent; replaced with rofi's run dialog.
-       Both of the original fbrun binds (Mod4 d and Mod1 F2) are replaced. -->
   <keybind key="W-r"><action name="Execute"><command>rofi -show run</command></action></keybind>
   <keybind key="W-e"><action name="Execute"><command>pcmanfm --profile fluxbox-music</command></action></keybind>
   <keybind key="W-s"><action name="Execute"><command>sunvox</command></action></keybind>
@@ -187,8 +186,7 @@
   <keybind key="A-space"><action name="ShowMenu"><menu>client-menu</menu></action></keybind>
   <keybind key="W-S-Escape"><action name="Kill"/></keybind>
 
-  <!-- Audacious volume via audtool (same as XFCE: ~/.local/bin/audacious-vol).
-       Do not bind raw keycodes - those steal real keys. -->
+  <!-- Audacious volume via audtool (XFCE parity). -->
   <keybind key="XF86AudioRaiseVolume"><action name="Execute"><command>/home/sb/.local/bin/audacious-vol +</command></action></keybind>
   <keybind key="XF86AudioLowerVolume"><action name="Execute"><command>/home/sb/.local/bin/audacious-vol -</command></action></keybind>
   <keybind key="XF86AudioMute"><action name="Execute"><command>/home/sb/.local/bin/audacious-vol mute</command></action></keybind>
@@ -200,60 +198,54 @@
   <keybind key="W-S-r"><action name="Execute"><command>openbox --reconfigure</command></action></keybind>
   <keybind key="C-A-Delete"><action name="Exit"><prompt>no</prompt></action></keybind>
 
-  <!-- Dropped, no translation (gap #2): StartTabbing has no Openbox equivalent. -->
+  <!-- Music-kiosk specific: clock-pop (W-t).  There's no panel in this
+       session but a clock window is still useful.  Same binding as the
+       music-kiosk rc.xml. -->
+  <keybind key="W-t"><action name="Execute"><command>/home/sb/.local/bin/clock-pop</command></action></keybind>
 </keyboard>
 
 <mouse>
   <dragThreshold>1</dragThreshold>
-  <!-- init: doubleClickInterval 250 -->
   <doubleClickTime>250</doubleClickTime>
   <screenEdgeWarpTime>400</screenEdgeWarpTime>
   <screenEdgeWarpMouse>false</screenEdgeWarpMouse>
 
-  <!-- OnDesktop in keys. Mouse1 :HideMenus needs no binding - Openbox already
-       dismisses open menus on an outside click. -->
+  <!-- Restored Openbox context menu: right-click on the desktop opens
+       the root-menu (DAWs, plugin hosts, files, terminal, ...),
+       middle-click opens the workspace-menu.  This is the Openbox
+       music-session behavior (the Fluxbox desktop right-click is the
+       one that opened a separate root-menu).  It is what makes this
+       kiosk "the Openbox kiosk with the Openbox context menu"
+       instead of the bare-bones music-kiosk one. -->
   <context name="Desktop">
     <mousebind button="Right" action="Press"><action name="ShowMenu"><menu>root-menu</menu></action></mousebind>
     <mousebind button="Middle" action="Press"><action name="ShowMenu"><menu>workspace-menu</menu></action></mousebind>
-    <!-- Scroll-to-switch-workspace on empty desktop disabled per user request. -->
   </context>
 
-  <!-- OnToolbar Mouse4/5 (Fluxbox's own toolbar) has no equivalent: tint2 is
-       the panel in this session, not fbtoolbar. Dropped, not a regression. -->
-
-  <!-- OnWindow Mod1 Mouse1/2/3 - move/resize/lower without stealing DAW Ctrl. -->
+  <!-- Titlebar-less DAWs (Renoise, Bitwig, Max): Super+right-click is Send To. -->
   <context name="Frame">
     <mousebind button="A-Left" action="Press"><action name="Raise"/><action name="Focus"/></mousebind>
     <mousebind button="A-Left" action="Drag"><action name="Move"/></mousebind>
     <mousebind button="A-Right" action="Press"><action name="Raise"/><action name="Focus"/></mousebind>
     <mousebind button="A-Right" action="Drag"><action name="Resize"/></mousebind>
     <mousebind button="A-Middle" action="Press"><action name="Lower"/><action name="FocusToBottom"/><action name="Unfocus"/></mousebind>
-    <!-- Titlebar-less DAWs (Renoise, Bitwig, Max): Super+right-click is Send To. -->
     <mousebind button="W-Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
   </context>
 
   <context name="Titlebar">
-    <!-- Double-click the title to maximize, not shade/roll-up. -->
     <mousebind button="Left" action="DoubleClick"><action name="ToggleMaximize"/></mousebind>
     <mousebind button="Left" action="Drag"><action name="Move"/></mousebind>
     <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/><action name="Unshade"/></mousebind>
     <mousebind button="Middle" action="Press"><action name="Lower"/><action name="FocusToBottom"/><action name="Unfocus"/></mousebind>
-    <!-- Right-click the title/border/grips for the window menu (has Send To). -->
     <mousebind button="Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
   </context>
 
-  <!-- OnWindowBorder Move1 :StartMoving - in this config the plain border
-       (not the bottom corners) drags to MOVE, matching the original keys
-       file's deliberate (non-default) choice. Right-click still opens the
-       window menu, same as the titlebar/grips. -->
   <context name="Top Left Right Bottom TLCorner TRCorner">
     <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/><action name="Unshade"/></mousebind>
     <mousebind button="Left" action="Drag"><action name="Move"/></mousebind>
     <mousebind button="Right" action="Press"><action name="Focus"/><action name="Raise"/><action name="ShowMenu"><menu>client-menu</menu></action></mousebind>
   </context>
 
-  <!-- OnLeftGrip/OnRightGrip: the two bottom corners resize (Fluxbox only
-       names bottom-left/bottom-right as grips). -->
   <context name="BLCorner">
     <mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/></mousebind>
     <mousebind button="Left" action="Drag"><action name="Resize"><edge>bottomleft</edge></action></mousebind>
@@ -308,10 +300,14 @@
 </mouse>
 
 <menu>
+  <!-- Restored Openbox root-menu (DAWs, plugin hosts, files,
+       terminal, session).  Identical to the openbox-music
+       session's menu.xml so W-space and right-click-on-desktop
+       give the user the same menu they're used to in that
+       session. -->
   <file>menu.xml</file>
   <hideDelay>200</hideDelay>
   <middle>no</middle>
-  <!-- init: menuDelay 150 -->
   <submenuShowDelay>150</submenuShowDelay>
   <submenuHideDelay>400</submenuHideDelay>
   <showIcons>yes</showIcons>
@@ -319,20 +315,10 @@
 </menu>
 
 <applications>
-  <!-- gap #3: the fbrun [app] entry (WINCENTER position, Layer 2) is dropped;
-       rofi positions itself. -->
-
-  <!-- gap #1: Plank, tint2, Audacious -> above. Renoise/plugin server and the
-       pcmanfm desktop window keep Openbox's default 'normal' layer / no
-       layer override respectively (5 Fluxbox layers collapse to 3). -->
-  <application class="Tint2">
-    <layer>above</layer>
-    <decor>no</decor>
-    <skip_taskbar>yes</skip_taskbar>
-    <skip_pager>yes</skip_pager>
-    <desktop>all</desktop>
-  </application>
-
+  <!-- Plank is NOT started in this session, but a stale
+       plank -n music / default dock1 from a prior Fluxbox or
+       openbox-music session could survive into here.  Setting
+       its layer/decor is harmless if it never appears. -->
   <application class="Plank">
     <layer>above</layer>
     <decor>no</decor>
@@ -341,9 +327,11 @@
     <desktop>all</desktop>
   </application>
 
-  <!-- type="desktop" replaces apps's raw @_NET_WM_WINDOW_TYPE=.*DESKTOP.*
-       match - Openbox exposes it as a first-class rule attribute. No
-       <layer> needed: the DESKTOP window type hint already sinks it. -->
+  <!-- pcmanfm (the Fluxbox/openbox-music DESKTOP window) is suppressed
+       in this session's startup, but a stale instance from a prior
+       session could still draw icons over the wallpapers.
+       type="desktop" matches by EWMH window type, so it does not
+       affect pcmanfm file-browser windows. -->
   <application class="Pcmanfm" type="desktop">
     <decor>no</decor>
     <skip_taskbar>yes</skip_taskbar>
@@ -351,17 +339,9 @@
     <desktop>all</desktop>
   </application>
 
-  <!-- Renoise (and its sandboxed plugin UIs) stay on Normal - no rule needed,
-     that is Openbox's default layer. AboveDock (Fluxbox layer 2) was a
-     workaround for Plank's oversized Fluxbox frame covering the bottom of
-     maximized DAWs; plank-input-shape.py fixes the input shape properly (see
-     gap #7 / PORT-NOTES.md), so Renoise does not need to sit above the dock
-     (and therefore above every other window) here either.
-     Matched classes: Renoise, "Renoise Plugin Server". -->
-
   <!-- Winamp-skin Audacious: three separate windows, no chrome.
-       Positions are restored by audacious-stack.py (transients otherwise
-       land on top of the player after a restart or resume). -->
+       Positions are restored by audacious-stack.py (transients
+       otherwise land on top of the player after a restart). -->
   <application class="Audacious" role="mainwindow">
     <decor>no</decor>
     <layer>above</layer>
@@ -374,20 +354,101 @@
     <decor>no</decor>
     <layer>above</layer>
   </application>
-  <!-- SunVox saves its own "maximized" state in sunvox_config.ini (width/
-       height, no x/y) and positions itself directly rather than asking the
-       WM for a real EWMH maximize, so it always lands at the screen's raw
-       top-left, under tint2's 30px strip. Force it down past the panel
-       on every map; Smart placement never gets a say because SunVox already
-       requests its own position. -->
-  <application class="sunvox">
+
+  <!-- Each DAW: maximized (NOT fullscreen), undecorated, forced onto
+       DP-4 (primary).  <fullscreen>yes</fullscreen> was the original
+       approach but it raises the window above EVERYTHING in Openbox,
+       so tooltips and dialogs stack under it.  <maximized> fills the
+       monitor the same way but keeps the window in the Normal layer.
+
+       force="yes" overrides the app's saved geometry, which otherwise
+       maps onto the portrait DP-2 (Renoise is the known case).  The
+       point 3406x882 is the CENTER of DP-4's rectangle (DP-4 pos
+       2446x342, size 1920x1080 -> center 2446+960, 342+540), strictly
+       inside DP-4, so Openbox finds DP-4 from the point alone and
+       maximizes on that monitor.
+
+       WM_CLASS class fields: Renoise and sunvox are confirmed live
+       (sunvox is lowercase).  Bitwig's comes from its .desktop
+       StartupWMClass=com.bitwig.BitwigStudio.  Max 9 is a Wine app;
+       its .desktop StartupWMClass=max.exe; Wine typically sets
+       WM_CLASS to the .exe name, so class="max.exe" is the best
+       guess. -->
+  <application class="Renoise" type="normal">
+    <decor>no</decor>
+    <maximized>yes</maximized>
     <position force="yes">
-      <x>0</x>
-      <y>32</y>
+      <x>3406</x>
+      <y>882</y>
     </position>
   </application>
+  <application class="com.bitwig.BitwigStudio" type="normal">
+    <decor>no</decor>
+    <maximized>yes</maximized>
+    <position force="yes">
+      <x>3406</x>
+      <y>882</y>
+    </position>
+  </application>
+
+  <!-- SunVox: windowed (its own settings disable fullscreen),
+       placed on DP-4 top-left.  <position><x><y> sets the
+       window's TOP-LEFT corner, not its center, so 3406x882
+       (DP-4 center) pushed the window past the bottom-right
+       edge.  2456x352 = DP-4 origin (2446x342) + 10px margin.
+       decor=yes so the user can move/resize the windowed app.
+
+       SunVox's SunDog engine writes an off-screen "user
+       specified location" into WM_NORMAL_HINTS at startup and
+       XMoveWindow's itself there shortly after mapping, which
+       beats this <position force="yes"> rule (force only
+       applies once, on initial placement).  sunvox-fix.py
+       re-positions the window for the first few seconds after
+       launch.  Leave this rule in place so the first paint
+       and the watcher's first read both land on DP-4. -->
+  <application class="sunvox" type="normal">
+    <decor>yes</decor>
+    <position force="yes">
+      <x>2456</x>
+      <y>352</y>
+    </position>
+  </application>
+
   <application class="max.exe" type="normal">
     <decor>yes</decor>
+  </application>
+
+  <!-- xclock (clock-pop, bound W-t): centered on the primary
+       monitor.  clock-pop hard-codes xclock -geometry 260x80-40-60
+       which pins it to HDMI-0's bottom-left; this rule overrides
+       that initial geometry and re-centers the window on DP-4
+       (1920x1080 at +2446+342).  force="yes" is required so
+       Openbox repositions the window after the WM honors the
+       -geometry hint on first map. -->
+  <application class="XClock" type="normal">
+    <decor>yes</decor>
+    <position force="yes">
+      <x>center</x>
+      <y>center</y>
+      <monitor>DP-4</monitor>
+    </position>
+  </application>
+
+  <!-- Plugin editors and dialogs: floating, decorated, draggable.
+       <layer>above</layer> keeps these visible over a maximized
+       DAW on DP-4: maximized Normal-layer windows stack above
+       other Normal-layer windows in Openbox, so without this a
+       zenity logout dialog (or any plugin alert / file picker)
+       could map behind the DAW. -->
+  <application name="*" type="dialog">
+    <decor>yes</decor>
+    <fullscreen>no</fullscreen>
+    <layer>above</layer>
+  </application>
+  <application name="*" type="utility">
+    <decor>yes</decor>
+    <fullscreen>no</fullscreen>
+    <layer>above</layer>
   </application>
 </applications>
 

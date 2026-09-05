@@ -7,3 +7,9 @@ panel-hidden
 *.bak
 *~
 __pycache__/
+# SunVox's previous-session snapshot, written when sunvox exits.
+# Not a project -- a private autosave. Generated next to the
+# project files SunVox was last editing.
+.sunvox_prev_session.sunvox
+# User-local debug log dumps; never share.
+debug/
