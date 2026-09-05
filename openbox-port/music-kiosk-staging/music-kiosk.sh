@@ -1,13 +1,14 @@
 #!/bin/sh
 # /usr/local/bin/music-kiosk
 # Music kiosk: Openbox + `plank -n kiosk` with Renoise, Bitwig Studio,
-# SunVox and Max 9 as the only dock entries. The DAWs are launched on
-# demand from Plank (this script does NOT auto-start any of them), so the
-# session has no single foreground app to tie its lifetime to the way
-# renoise-kiosk ties it to Renoise. Instead Openbox runs in the background
-# and this script blocks on `wait $obpid`; the session ends when Openbox
-# exits -- via the C-A-End keybinding in rc.xml (Exit action) or by
-# killing Openbox. See rc.xml.
+# SunVox and Max 9 as the only dock entries. Gajim, Audacious, Renoise,
+# Bitwig Studio and SunVox are auto-started below (backgrounded, so this
+# script returns immediately and Openbox can come up). The session has no
+# single foreground app to tie its lifetime to the way renoise-kiosk
+# ties it to Renoise; instead Openbox runs in the background and this
+# script blocks on `wait $obpid`; the session ends when Openbox exits --
+# via the C-A-End keybinding in rc.xml (Exit action) or by killing
+# Openbox. See rc.xml.
 
 log=/tmp/music-kiosk.log
 exec >>"$log" 2>&1
@@ -167,6 +168,31 @@ plankpid=
 if command -v plank >/dev/null 2>&1; then
     ( sleep 1; exec plank -n kiosk ) &
     plankpid=$!
+fi
+
+# Auto-start the user-requested apps: Gajim (chat), Audacious (player),
+# plus the three DAWs on the dock (Renoise, Bitwig Studio, SunVox). Each
+# is backgrounded so this script keeps going and Openbox keeps starting.
+# Max 9 is intentionally NOT auto-started -- it stays on-demand from
+# Plank like before, since it's the heaviest app and max-fix.py only
+# engages when its window actually appears. sunvox-fix.py (started
+# below) is window-driven, so it picks up an auto-launched SunVox too.
+# Short stagger so all five don't try to claim the JACK/Pulse/Audio
+# device at exactly the same instant.
+if command -v gajim >/dev/null 2>&1; then
+    ( sleep 2; gajim >/dev/null 2>&1 ) &
+fi
+if command -v audacious >/dev/null 2>&1; then
+    ( sleep 2; audacious >/dev/null 2>&1 ) &
+fi
+if command -v renoise >/dev/null 2>&1; then
+    ( sleep 3; renoise >/dev/null 2>&1 ) &
+fi
+if command -v bitwig-studio >/dev/null 2>&1; then
+    ( sleep 4; bitwig-studio >/dev/null 2>&1 ) &
+fi
+if command -v sunvox >/dev/null 2>&1; then
+    ( sleep 5; sunvox >/dev/null 2>&1 ) &
 fi
 
 # Background reaper: openbox-autostart (/usr/lib/openbox/openbox-autostart)
