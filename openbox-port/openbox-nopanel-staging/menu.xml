@@ -56,9 +56,6 @@
   <item label="Audacious" icon="/home/sb/.fluxbox/pixmaps/audacious.png">
     <action name="Execute"><command>audacious</command></action>
   </item>
-  <item label="WezTerm" icon="/home/sb/.fluxbox/pixmaps/wezterm.png">
-    <action name="Execute"><command>wezterm</command></action>
-  </item>
 
   <menu id="daws-menu" label="DAWs">
     <item label="SunVox" icon="/home/sb/.fluxbox/pixmaps/sunvox.png"><action name="Execute"><command>sunvox</command></action></item>

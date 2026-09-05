@@ -73,28 +73,57 @@ for item in "$src_plank"/*.dockitem; do
 done
 
 # SunVox desktop file patch: install a user-local copy of
-# /usr/share/applications/sunvox.desktop with StartupWMClass=sunvox
-# appended.  SunVox's WM_CLASS is "sunvox"/"sunvox" (verified live with
-# xprop) but the system .desktop lacks StartupWMClass, so Plank can't
-# associate the running window to the pinned SunVox dockitem -- it
-# falls back to matching by `Exec=sunvox` against the running process
-# list and ends up showing a SECOND "running" icon next to the pinned
-# one.  XDG resolves ~/.local/share/applications before
-# /usr/share/applications, so this override is what every launcher
-# (Plank, xdg-open, rofi's drun mode) sees for SunVox from now on.
-# Same problem affected Renoise until StartupWMClass=Renoise was
-# added to its .desktop.
+# /usr/share/applications/sunvox.desktop with three changes:
+#
+#   1. StartupNotify=true (was false).  Plank / xdg-open / gtk-launch
+#      use the startup-notification protocol to map a freshly-launched
+#      window to its desktop file BEFORE the window appears.  With
+#      false, Plank falls back to asking BAMF after the window maps,
+#      and that post-hoc match is race-prone (see #3 below).  True
+#      makes the match synchronous and reliable for any launch path
+#      (Plank dock click, xdg-open, rofi drun, gtk-launch).
+#
+#   2. StartupWMClass=sunvox appended.  SunVox's WM_CLASS is
+#      "sunvox" / "sunvox" (verified live with xprop) but the system
+#      .desktop lacks StartupWMClass.  Plank uses StartupWMClass as a
+#      secondary match key when BAMF is unavailable or returns
+#      nothing, so this is a belt-and-suspenders backstop for #1.
+#      Same fix was applied to renoise.desktop earlier; see
+#      music-kiosk.sh line 188 for that history.
+#
+#   3. XDG resolves ~/.local/share/applications BEFORE
+#      /usr/share/applications, so this override is what every
+#      launcher (Plank, xdg-open, rofi's drun mode, gtk-launch) sees
+#      for SunVox from now on.  Without it, all of them read the
+#      unpatched system file.
+#
+# Why this matters even though the launcher subshell already waits
+# for BAMF before auto-launching SunVox: that wait covers the
+# initial auto-launch only.  When the user clicks SunVox in Plank
+# later (or runs `sunvox` from wezterm / rofi), no wait runs --
+# the same race recurs, BAMF is queried late, and Plank auto-adds
+# a duplicate "running-only" icon.  StartupNotify=true eliminates
+# the race for every launch path.
 mkdir -p "$HOME/.local/share/applications"
 sunvox_desktop="$HOME/.local/share/applications/sunvox.desktop"
-if [ ! -f "$sunvox_desktop" ] || ! grep -q '^StartupWMClass=sunvox$' "$sunvox_desktop" 2>/dev/null; then
+sunvox_needs_install=0
+if [ ! -f "$sunvox_desktop" ]; then
+    sunvox_needs_install=1
+elif ! grep -q '^StartupWMClass=sunvox$' "$sunvox_desktop" 2>/dev/null \
+   || grep -q '^StartupNotify=false' "$sunvox_desktop" 2>/dev/null; then
+    sunvox_needs_install=1
+fi
+if [ "$sunvox_needs_install" = "1" ]; then
     if [ -f /usr/share/applications/sunvox.desktop ]; then
         awk '
+            /^StartupNotify=false/ { print "StartupNotify=true"; print "StartupWMClass=sunvox"; next }
+            /^StartupNotify=true/ { print; print "StartupWMClass=sunvox"; next }
             /^StartupNotify=/ { print; print "StartupWMClass=sunvox"; next }
             { print }
         ' /usr/share/applications/sunvox.desktop > "$sunvox_desktop.tmp"
         mv "$sunvox_desktop.tmp" "$sunvox_desktop"
         chmod 644 "$sunvox_desktop"
-        printf 'installed:\n  %s -> %s (user .desktop override with StartupWMClass=sunvox)\n' \
+        printf 'installed:\n  %s -> %s (user .desktop override with StartupNotify=true, StartupWMClass=sunvox)\n' \
             /usr/share/applications/sunvox.desktop "$sunvox_desktop"
 
         # bamfdaemon caches its desktop-file index in memory.  A
