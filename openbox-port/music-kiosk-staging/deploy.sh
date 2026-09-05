@@ -96,6 +96,19 @@ if [ ! -f "$sunvox_desktop" ] || ! grep -q '^StartupWMClass=sunvox$' "$sunvox_de
         chmod 644 "$sunvox_desktop"
         printf 'installed:\n  %s -> %s (user .desktop override with StartupWMClass=sunvox)\n' \
             /usr/share/applications/sunvox.desktop "$sunvox_desktop"
+
+        # bamfdaemon caches its desktop-file index in memory.  A
+        # deploy that patches sunvox.desktop (or any other file with
+        # a StartupWMClass line) won't be picked up until bamfdaemon
+        # respawns.  Killing it here is safe -- it's a dbus
+        # activated service that re-launches on demand (plank /
+        # xdg-open / any client triggering it triggers the respawn).
+        # No-op if bamfdaemon isn't running (e.g. running this
+        # deploy from outside an X session).
+        if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && pgrep -x bamfdaemon >/dev/null 2>&1; then
+            pkill -x bamfdaemon 2>/dev/null || true
+            printf 'restarted bamfdaemon (it was holding a stale desktop-file cache)\n'
+        fi
     fi
 fi
 

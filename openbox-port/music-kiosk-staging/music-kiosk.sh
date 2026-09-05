@@ -80,6 +80,18 @@ pkill -x tint2 2>/dev/null || true
 pkill -x picom 2>/dev/null || true
 pkill -x plank 2>/dev/null || true
 pkill -f 'pcmanfm --desktop' 2>/dev/null || true
+# SunVox: a sunvox process orphaned by an earlier session logout
+# (PPID 1) survives into the new X server and ends up registering a
+# Plank "running" icon at the same time as the auto-launched sunvox
+# below -- two icons for the same app, no StartupWMClass match
+# because /usr/share/applications/sunvox.desktop lacks it.  The
+# ~/.local/share/applications/sunvox.desktop override added by
+# deploy.sh fixes FUTURE mappings; kill the orphan here so we don't
+# also have a duplicate from the prior session.  Same for the
+# sunvox-fix.py watcher (would reposition the wrong window if its
+# target died while a duplicate spawned).
+pkill -x sunvox 2>/dev/null || true
+pkill -f 'sunvox-fix\.py' 2>/dev/null || true
 
 # Belt-and-suspenders: ~/.config/openbox/autostart is sourced by
 # /usr/lib/openbox/openbox-autostart unconditionally after Openbox starts

@@ -16,6 +16,10 @@
 </menu>
 
 <menu id="root-menu" label="Music">
+  <item label="WezTerm" icon="/home/sb/.fluxbox/pixmaps/wezterm.png">
+    <action name="Execute"><command>wezterm</command></action>
+  </item>
+  <separator/>
   <item label="SunVox" icon="/home/sb/.fluxbox/pixmaps/sunvox.png">
     <action name="Execute"><command>sunvox</command></action>
   </item>
