@@ -1,5 +1,5 @@
 [PlankDockItemPreferences]
-Launcher=file:///usr/share/applications/sunvox.desktop
+Launcher=file:///home/sb/.local/share/applications/sunvox.desktop
 SortBy=name
 DirectoryStyle=0
 ShowHiddenFiles=false

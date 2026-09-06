@@ -97,6 +97,16 @@ done
 #      for SunVox from now on.  Without it, all of them read the
 #      unpatched system file.
 #
+#   4. sunvox.dockitem must point at THIS user-local file, not
+#      /usr/share/applications/sunvox.desktop.  BAMF resolves the
+#      running SunVox window to the user-local desktop file (XDG
+#      priority, same "sunvox" id), and Plank decides "already
+#      running" by comparing its launcher's desktop-file path with
+#      the path BAMF reports for the window.  A dockitem pointing at
+#      /usr/share/... never matches: the click launches a SECOND
+#      sunvox instead of focusing the existing window.  Same reason
+#      renoise/max9/bitwig dockitems use ~/.local paths.
+#
 # Why this matters even though the launcher subshell already waits
 # for BAMF before auto-launching SunVox: that wait covers the
 # initial auto-launch only.  When the user clicks SunVox in Plank

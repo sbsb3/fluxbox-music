@@ -186,15 +186,20 @@ fi
 # ('s') ends up at the far right.  Overriding dock-items explicitly
 # here puts the DAWs together: Renoise, Bitwig, SunVox, Max 9.
 #
-# pinned-only: left at Plank's default (false) on purpose -- running
-# apps the user starts that aren't pinned DO appear in the dock
-# (e.g. opening wezterm from the root-menu for a quick command adds
-# a wezterm entry alongside the pinned org.wezfurlong.wezterm.dockitem).
-# The previous "duplicate SunVox icon" bug came from Plank auto-
-# adding SunVox BEFORE BAMF had registered it: with pinned-only=false
-# and no BAMF match, Plank adds a second dockitem entry.  Fix below
-# in the launcher subshell: wait for BAMF to be ready before auto-
-# launching SunVox, so Plank's first match attempt sees BAMF up.
+# pinned-only=true: when a running app fails to be matched to one of
+# the pinned dockitems (BAMF not ready yet, or a desktop-file path
+# mismatch), pinned-only=false auto-adds the unmatched app as a NEW
+# "running-only" dock entry -- the user sees the pinned SunVox icon
+# plus a second running one.  pinned-only=true tells Plank to NEVER
+# add entries itself: unmatched running windows just don't appear in
+# the dock.  Every app the user launches here is already pinned, so
+# nothing is lost.  This is the durable fix for "two SunVox icons":
+# it covers not just the auto-launch race but ALSO the later
+# click-launch race, where the StartupNotify/StartupWMClass fix in
+# ~/.local/share/applications/sunvox.desktop alone was not enough
+# (b676f98 reverted this to false; that re-introduced the duplicate
+# because it assumed the BAMF wait covers every launch path -- it
+# only covers the auto-launch).
 #
 # Music-kiosk has its own `kiosk` dock; this session reuses the same
 # launchers via `plank -n nopanel`, with a dock directory the user
@@ -206,13 +211,12 @@ if command -v plank >/dev/null 2>&1; then
         dconf write /net/launchpad/plank/docks/nopanel/hide-mode "'auto'" 2>/dev/null || true
         dconf write /net/launchpad/plank/docks/nopanel/pressure-reveal true 2>/dev/null || true
         dconf write /net/launchpad/plank/docks/nopanel/unhide-delay 60 2>/dev/null || true
-        # pinned-only: left at Plank's default (false) so running apps
-        # the user starts that aren't pinned do appear in the dock.
-        # The duplicate-SunVox-icon bug is fixed instead by waiting
-        # for BAMF to be ready before auto-launching SunVox (see the
-        # launcher subshell below) -- with BAMF up, Plank can match
-        # the SunVox window to the pinned sunvox.dockitem instead of
-        # auto-adding a second entry.
+        # pinned-only=true: Plank's compiled-in default is false, and
+        # with false any running window Plank can't match to a pinned
+        # dockitem (BAMF race, desktop-file path mismatch) is added as
+        # a second "running-only" icon -- "two SunVox icons".  See the
+        # comment block above for why true is the durable fix.
+        dconf write /net/launchpad/plank/docks/nopanel/pinned-only true 2>/dev/null || true
         dconf write /net/launchpad/plank/docks/nopanel/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
     fi
     ( sleep 1; exec plank -n nopanel ) &
