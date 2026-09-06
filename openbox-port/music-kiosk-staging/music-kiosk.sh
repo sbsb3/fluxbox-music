@@ -171,20 +171,18 @@ fi
 # ('s') ends up at the far right.  Overriding dock-items explicitly
 # here puts the DAWs together: Renoise, Bitwig, SunVox, Max 9.
 #
-# pinned-only=true: see the matching block in openbox-nopanel.sh for
-# the full rationale.  Short version: with Plank's default
-# pinned-only=false, any running window Plank can't match to a pinned
-# dockitem (BAMF race, desktop-file path mismatch) is auto-added to
-# the dock as a second icon -- "two SunVox icons".  pinned-only=true
-# stops Plank from ever adding entries itself; every launchable app
-# here is already pinned, so nothing is lost.  b676f98 reverted this
-# to false assuming the BAMF wait covers every launch -- it only
-# covers the auto-launch, not later click-launches.
+# pinned-only: left at Plank's default (false) so running apps the
+# user starts that aren't pinned DO appear in the dock -- hiding
+# unpinned apps with pinned-only=true is not wanted.  The SunVox
+# duplicate-icon failure of false is avoided because sunvox.dockitem
+# and BAMF now resolve to the same desktop file
+# (~/.local/share/applications/sunvox.desktop -- see deploy.sh), so
+# the running window matches the pinned icon instead of being added
+# a second time.  See the matching block in openbox-nopanel.sh.
 if command -v dconf >/dev/null 2>&1; then
     dconf write /net/launchpad/plank/docks/kiosk/hide-mode "'auto'" 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/pressure-reveal true 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/unhide-delay 60 2>/dev/null || true
-    dconf write /net/launchpad/plank/docks/kiosk/pinned-only true 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
 fi
 plankpid=
