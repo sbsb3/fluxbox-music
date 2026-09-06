@@ -346,14 +346,17 @@
   <application class="Audacious" role="mainwindow">
     <decor>no</decor>
     <layer>above</layer>
+    <desktop>2</desktop>
   </application>
   <application class="Audacious" role="equalizer">
     <decor>no</decor>
     <layer>above</layer>
+    <desktop>2</desktop>
   </application>
   <application class="Audacious" role="playlist">
     <decor>no</decor>
     <layer>above</layer>
+    <desktop>2</desktop>
   </application>
 
   <!-- Each DAW: maximized (NOT fullscreen), undecorated, forced onto
@@ -361,6 +364,12 @@
        approach but it raises the window above EVERYTHING in Openbox,
        so tooltips and dialogs stack under it.  <maximized> fills the
        monitor the same way but keeps the window in the Normal layer.
+
+       All audio apps (Audacious above, Gajim, the DAWs below, and
+       Max 9) carry <desktop>2</desktop> so this session boots into
+       the Internet workspace (desk 1) but every auto-launched audio
+       app lands on the Audio workspace (desk 2).  The user can hop
+       between them with W-1 / W-2 / W-Tab.
 
        force="yes" overrides the app's saved geometry, which otherwise
        maps onto the portrait DP-2 (Renoise is the known case).  The
@@ -378,6 +387,7 @@
   <application class="Renoise" type="normal">
     <decor>no</decor>
     <maximized>yes</maximized>
+    <desktop>2</desktop>
     <position force="yes">
       <x>3406</x>
       <y>882</y>
@@ -386,10 +396,18 @@
   <application class="com.bitwig.BitwigStudio" type="normal">
     <decor>no</decor>
     <maximized>yes</maximized>
+    <desktop>2</desktop>
     <position force="yes">
       <x>3406</x>
       <y>882</y>
     </position>
+  </application>
+
+  <!-- Gajim (chat): lands on Audio so it doesn't clutter the Internet
+       workspace this session boots into.  WM_CLASS "gajim" matches
+       both the main window and the chat windows. -->
+  <application class="gajim" type="normal">
+    <desktop>2</desktop>
   </application>
 
   <!-- SunVox: windowed (its own settings disable fullscreen),
@@ -409,6 +427,7 @@
        and the watcher's first read both land on DP-4. -->
   <application class="sunvox" type="normal">
     <decor>yes</decor>
+    <desktop>2</desktop>
     <position force="yes">
       <x>2456</x>
       <y>352</y>
@@ -417,6 +436,7 @@
 
   <application class="max.exe" type="normal">
     <decor>yes</decor>
+    <desktop>2</desktop>
   </application>
 
   <!-- xclock (clock-pop, bound W-t): centered on the primary
