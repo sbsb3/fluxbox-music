@@ -368,7 +368,7 @@
        so tooltips and dialogs stack under it.  <maximized> fills the
        monitor the same way but keeps the window in the Normal layer.
 
-       All audio apps (Audacious above, Gajim, the DAWs below, and
+       All audio apps (Audacious above, Dino, the DAWs below, and
        Max 9) carry <desktop>2</desktop> so this session boots into
        the Internet workspace (desk 1) but every auto-launched audio
        app lands on the Audio workspace (desk 2).  The user can hop
@@ -416,10 +416,11 @@
     </position>
   </application>
 
-  <!-- Gajim (chat): lands on Audio so it doesn't clutter the Internet
-       workspace this session boots into.  WM_CLASS "gajim" matches
-       both the main window and the chat windows. -->
-  <application class="gajim" type="normal">
+  <!-- Dino (XMPP chat): lands on Audio so it doesn't clutter the Internet
+       workspace this session boots into.  WM_CLASS "dino" matches
+       the main window and conversation windows alike (verified
+       live with xprop; both instance and class are "dino"). -->
+  <application class="dino" type="normal">
     <desktop>2</desktop>
   </application>
 

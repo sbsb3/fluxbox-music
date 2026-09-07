@@ -2,6 +2,6 @@
 Encoding=UTF-8
 Type=XSession
 Name=Openbox No Panel
-Comment=Openbox session with the Openbox root-menu and keybindings but no tint2 panel and no desktop icons. Gajim, Audacious, Renoise, Bitwig Studio and SunVox auto-start; Renoise and Bitwig maximize on DP-4 (primary). Right-click on the desktop opens the Openbox root-menu; W-space also opens it; W-S-Escape / C-A-Delete end the session.
+Comment=Openbox session with the Openbox root-menu and keybindings but no tint2 panel and no desktop icons. Dino, Audacious, Renoise, Bitwig Studio and SunVox auto-start; Renoise and Bitwig maximize on DP-4 (primary). Right-click on the desktop opens the Openbox root-menu; W-space also opens it; W-S-Escape and the Session -> Leave menu item end the session.
 Exec=/usr/local/bin/openbox-nopanel
 TryExec=/usr/local/bin/openbox-nopanel

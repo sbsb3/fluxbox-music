@@ -50,8 +50,8 @@
   <item label="Chromium" icon="/home/sb/.fluxbox/pixmaps/chromium.png">
     <action name="Execute"><command>chromium</command></action>
   </item>
-  <item label="Gajim" icon="/home/sb/.fluxbox/pixmaps/gajim.png">
-    <action name="Execute"><command>gajim</command></action>
+  <item label="Dino" icon="/home/sb/.fluxbox/pixmaps/dino.png">
+    <action name="Execute"><command>dino</command></action>
   </item>
   <item label="Audacious" icon="/home/sb/.fluxbox/pixmaps/audacious.png">
     <action name="Execute"><command>audacious</command></action>
@@ -144,7 +144,7 @@
 
   <menu id="internet-menu" label="Internet">
     <item label="Chromium" icon="/home/sb/.fluxbox/pixmaps/chromium.png"><action name="Execute"><command>chromium</command></action></item>
-    <item label="Gajim" icon="/home/sb/.fluxbox/pixmaps/gajim.png"><action name="Execute"><command>gajim</command></action></item>
+    <item label="Dino" icon="/home/sb/.fluxbox/pixmaps/dino.png"><action name="Execute"><command>dino</command></action></item>
   </menu>
 
   <!-- Fluxbox's [stylesdir] browser has no Openbox equivalent - Openbox

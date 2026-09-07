@@ -14,7 +14,7 @@
       [exec] (Volume Control) {pavucontrol} <~/.fluxbox/pixmaps/pavucontrol.png>
       [separator]
       [exec] (Chromium) {chromium} <~/.fluxbox/pixmaps/chromium.png>
-      [exec] (Gajim) {gajim} <~/.fluxbox/pixmaps/gajim.png>
+      [exec] (Dino) {dino} <~/.fluxbox/pixmaps/dino.png>
       [exec] (Audacious) {audacious} <~/.fluxbox/pixmaps/audacious.png>
 
 [submenu] (DAWs)
@@ -104,7 +104,7 @@
 
 [submenu] (Internet)
       [exec] (Chromium) {chromium} <~/.fluxbox/pixmaps/chromium.png>
-      [exec] (Gajim) {gajim} <~/.fluxbox/pixmaps/gajim.png>
+      [exec] (Dino) {dino} <~/.fluxbox/pixmaps/dino.png>
 [end]
 
 [submenu] (Themes)

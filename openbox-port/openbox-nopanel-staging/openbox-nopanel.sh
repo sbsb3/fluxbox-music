@@ -167,7 +167,7 @@ if command -v picom >/dev/null 2>&1; then
 fi
 
 # Named dock "nopanel": same dock items as music-kiosk (Renoise, Bitwig,
-# SunVox, Max 9, Audacious, Gajim, pavucontrol, qpwgraph, Hydrogen,
+# SunVox, Max 9, Audacious, Dino, pavucontrol, qpwgraph, Hydrogen,
 # Carla, Audacity, PlugData, wezterm, kiosk-logout).  Sleep 1 so
 # Openbox is up first and Plank registers against it; also gives the
 # pkill above a moment to settle.
@@ -224,15 +224,16 @@ if command -v plank >/dev/null 2>&1; then
         # now resolve to the same desktop file (see block above), so
         # the window matches the pinned icon instead of being added a
         # second time.
-        dconf write /net/launchpad/plank/docks/nopanel/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
+        dconf write /net/launchpad/plank/docks/nopanel/dock-items "['audacious.dockitem', 'im.dino.Dino.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
     fi
     ( sleep 1; exec plank -n nopanel ) &
     plankpid=$!
 fi
 
-# Auto-start the user-requested apps: Gajim (chat), Audacious (player),
-# plus the three DAWs (Renoise, Bitwig Studio, SunVox).  Each is
-# backgrounded so this script keeps going and Openbox keeps starting.
+# Auto-start the user-requested apps: Dino (XMPP chat), Audacious
+# (player), plus the three DAWs (Renoise, Bitwig Studio, SunVox).
+# Each is backgrounded so this script keeps going and Openbox
+# keeps starting.
 # Max 9 is intentionally NOT auto-started -- it stays on-demand from
 # the root-menu (DAWs -> Max 9) or W-m, since it's the heaviest app
 # and max-fix.py only engages when its window actually appears.
@@ -289,8 +290,8 @@ fi
         sleep 5
     fi
 
-    if command -v gajim >/dev/null 2>&1; then
-        gajim >/dev/null 2>&1 &
+    if command -v dino >/dev/null 2>&1; then
+        dino >/dev/null 2>&1 &
     fi
     sleep 2
 

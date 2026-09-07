@@ -1,5 +1,5 @@
 [PlankDockItemPreferences]
-Launcher=file:///usr/share/applications/org.gajim.Gajim.desktop
+Launcher=file:///usr/share/applications/im.dino.Dino.desktop
 SortBy=name
 DirectoryStyle=0
 ShowHiddenFiles=false

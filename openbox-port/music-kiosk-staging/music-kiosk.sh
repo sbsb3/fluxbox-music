@@ -186,7 +186,7 @@ if command -v dconf >/dev/null 2>&1; then
     dconf write /net/launchpad/plank/docks/kiosk/hide-mode "'auto'" 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/pressure-reveal true 2>/dev/null || true
     dconf write /net/launchpad/plank/docks/kiosk/unhide-delay 60 2>/dev/null || true
-    dconf write /net/launchpad/plank/docks/kiosk/dock-items "['audacious.dockitem', 'org.gajim.Gajim.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
+    dconf write /net/launchpad/plank/docks/kiosk/dock-items "['audacious.dockitem', 'im.dino.Dino.dockitem', 'org.pulseaudio.pavucontrol.dockitem', 'renoise.dockitem', 'com.bitwig.BitwigStudio.dockitem', 'sunvox.dockitem', 'max9.dockitem', 'plugdata.dockitem', 'org.hydrogenmusic.Hydrogen.dockitem', 'carla.dockitem', 'org.rncbc.qpwgraph.dockitem', 'audacity.dockitem', 'music-kiosk-logout.dockitem', 'org.wezfurlong.wezterm.dockitem']" 2>/dev/null || true
 fi
 plankpid=
 if command -v plank >/dev/null 2>&1; then
@@ -194,9 +194,10 @@ if command -v plank >/dev/null 2>&1; then
     plankpid=$!
 fi
 
-# Auto-start the user-requested apps: Gajim (chat), Audacious (player),
-# plus the three DAWs on the dock (Renoise, Bitwig Studio, SunVox). Each
-# is backgrounded so this script keeps going and Openbox keeps starting.
+# Auto-start the user-requested apps: Dino (XMPP chat), Audacious
+# (player), plus the three DAWs on the dock (Renoise, Bitwig Studio,
+# SunVox). Each is backgrounded so this script keeps going and
+# Openbox keeps starting.
 # Max 9 is intentionally NOT auto-started -- it stays on-demand from
 # Plank like before, since it's the heaviest app and max-fix.py only
 # engages when its window actually appears. sunvox-fix.py (started
@@ -242,8 +243,8 @@ fi
         sleep 5
     fi
 
-    if command -v gajim >/dev/null 2>&1; then
-        gajim >/dev/null 2>&1 &
+    if command -v dino >/dev/null 2>&1; then
+        dino >/dev/null 2>&1 &
     fi
     sleep 2
 
