@@ -166,7 +166,7 @@
   <keybind key="W-b"><action name="Execute"><command>bitwig-studio</command></action></keybind>
   <keybind key="W-c"><action name="Execute"><command>gsimplecal</command></action></keybind>
   <keybind key="W-g"><action name="Execute"><command>qpwgraph</command></action></keybind>
-  <keybind key="W-v"><action name="Execute"><command>pavucontrol</command></action></keybind>
+  <keybind key="W-Shift-v"><action name="Execute"><command>pavucontrol</command></action></keybind>
   <keybind key="W-h"><action name="Execute"><command>hydrogen</command></action></keybind>
   <keybind key="W-m"><action name="Execute"><command>/home/sb/bin/max9.sh</command></action></keybind>
   <keybind key="W-p"><action name="Execute"><command>plugdata</command></action></keybind>
@@ -383,7 +383,17 @@
        StartupWMClass=com.bitwig.BitwigStudio.  Max 9 is a Wine app;
        its .desktop StartupWMClass=max.exe; Wine typically sets
        WM_CLASS to the .exe name, so class="max.exe" is the best
-       guess. -->
+       guess.
+
+       Bitwig writes WM_CLASS as a single null-terminated string
+       (no separate res_class token; xprop shows
+       WM_CLASS(STRING) = "com.bitwig.BitwigStudio" with no
+       trailing instance/class pair).  Openbox's class= match is
+       case-sensitive against res_class, which is empty for
+       Bitwig, so the rule would never fire and Bitwig always
+       landed on the Internet workspace.  Match by name= instead
+       (res_name/instance, the only half Bitwig actually sets).
+       Verified live; same fix in music-kiosk-staging/rc.xml. -->
   <application class="Renoise" type="normal">
     <decor>no</decor>
     <maximized>yes</maximized>
@@ -393,7 +403,7 @@
       <y>882</y>
     </position>
   </application>
-  <application class="com.bitwig.BitwigStudio" type="normal">
+  <application name="com.bitwig.BitwigStudio" type="normal">
     <decor>no</decor>
     <maximized>yes</maximized>
     <desktop>2</desktop>
