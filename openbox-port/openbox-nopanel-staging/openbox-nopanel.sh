@@ -3,11 +3,15 @@
 # Openbox No Panel: Openbox + the openbox-music-session keybindings (W-1/2,
 # W-space root-menu, W-Return terminal, W-F4 close, etc.) and the
 # restored Openbox root-menu, but with NO tint2 panel and NO Plank dock.
-# Like Music Kiosk: auto-starts Gajim, Audacious, Renoise, Bitwig Studio
-# and SunVox; Renoise/Bitwig maximize on DP-4 (primary); no desktop icons
+# Like Music Kiosk: auto-starts Dino (XMPP chat), Audacious, Renoise,
+# Bitwig Studio and SunVox; Renoise/Bitwig maximize on DP-4 (primary);
+# no desktop icons
 # (pcmanfm --desktop is killed so the wallpapers stay clean); ends when
-# Openbox exits via W-S-Escape / Kill, C-A-Delete / Exit, or the
-# `Leave session` item in the Session menu (root-menu -> Session).
+# Openbox exits via W-S-Escape / Kill, the `Leave session` item in
+# the Session menu (root-menu -> Session), or killing the openbox
+# process from outside the session.  C-A-Delete used to Exit from
+# anywhere with no prompt but is disabled -- too easy to hit while
+# reaching for other shortcuts in Renoise/Bitwig.
 #
 # Like the openbox music session, the Openbox autostart hook
 # (~/.config/openbox/autostart) is gated on OPENBOX_NOPANEL_SESSION=1
@@ -448,7 +452,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Block until Openbox exits (W-S-Escape / Kill, C-A-Delete / Exit, or
-# the Session -> Leave session menu item -- all in rc.xml).  `wait`
-# returns the exit status of $obpid; ignore it (the trap cleans up).
+# Block until Openbox exits (W-S-Escape / Kill, the Session ->
+# Leave session menu item -- all in rc.xml).  `wait` returns the
+# exit status of $obpid; ignore it (the trap cleans up).
 wait "$obpid" 2>/dev/null || true

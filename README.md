@@ -340,13 +340,17 @@ system locations (LightDM entries, `/usr/local/bin/*`, sudoers rules).
 
 **`music-kiosk-staging/` — Music kiosk.** Openbox + `plank -n kiosk`, with
 DAWs (Renoise, Bitwig, SunVox, Max 9) plus support tools (Audacious, Audacity,
-Carla, Hydrogen, pavucontrol, qpwgraph, PlugData, ZynAddSubFX, WezTerm, Gajim,
+Carla, Hydrogen, pavucontrol, qpwgraph, PlugData, ZynAddSubFX, WezTerm, Dino,
 and a graphical logout launcher) as the only Plank dock entries. DAWs are
 launched **on demand** from Plank — the script does not auto-start any of
 them, so there's no single foreground app to tie the session lifetime to.
 Instead Openbox runs in the background and the script blocks on
 `wait $obpid`; the session ends when Openbox exits — via the
-`Ctrl-Alt-End` keybinding in `rc.xml` (`Exit` action) or by killing Openbox.
+root-menu `Session → Leave` item, the `music-kiosk-logout` dockitem, or
+by killing Openbox from outside the session. The `Ctrl-Alt-End`
+`Exit` keybinding that used to live in `rc.xml` has been removed; it
+was too easy to hit while reaching for other shortcuts in
+Renoise/Bitwig/SunVox.
 
 Kiosk specifics refined through many commits:
 - 3-monitor XFCE-exact layout; portrait `DP-2` placed on the left; `HDMI-0`

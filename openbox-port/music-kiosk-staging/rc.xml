@@ -74,9 +74,12 @@
     <keybind key="A-S-Tab">
       <action name="Execute"><command>/home/sb/scripts/alttab.sh prev</command></action>
     </keybind>
-    <keybind key="C-A-End">
-      <action name="Exit"/>
-    </keybind>
+    <!-- C-A-End used to Exit Openbox from anywhere.  Disabled on
+         user request; too easy to hit while reaching for other
+         shortcuts in Renoise/Bitwig/SunVox.  Leave the music-kiosk
+         session via the root-menu Session -> Leave item, the
+         music-kiosk-logout dockitem, or kill the openbox process
+         from outside the session. -->
     <keybind key="W-r">
       <action name="Execute"><command>rofi -show run</command></action>
     </keybind>

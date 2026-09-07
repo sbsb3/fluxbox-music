@@ -194,9 +194,12 @@
   <keybind key="Print"><action name="Execute"><command>scrot "/home/sb/Pictures/%Y-%m-%d-%H%M%S.png"</command></action></keybind>
   <keybind key="W-Print"><action name="Execute"><command>scrot -s "/home/sb/Pictures/%Y-%m-%d-%H%M%S.png"</command></action></keybind>
 
-  <!-- Reload / leave -->
+  <!-- Reload only.  C-A-Delete used to Exit Openbox from anywhere
+       (no prompt).  Disabled on user request; too easy to hit while
+       reaching for other shortcuts in Renoise/Bitwig.  Leave Openbox
+       via the root-menu -> Session -> Leave Openbox No Panel item,
+       or kill the openbox process from outside the session. -->
   <keybind key="W-S-r"><action name="Execute"><command>openbox --reconfigure</command></action></keybind>
-  <keybind key="C-A-Delete"><action name="Exit"><prompt>no</prompt></action></keybind>
 
   <!-- Music-kiosk specific: clock-pop (W-t).  There's no panel in this
        session but a clock window is still useful.  Same binding as the

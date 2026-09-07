@@ -1,14 +1,17 @@
 #!/bin/sh
 # /usr/local/bin/music-kiosk
 # Music kiosk: Openbox + `plank -n kiosk` with Renoise, Bitwig Studio,
-# SunVox and Max 9 as the only dock entries. Gajim, Audacious, Renoise,
+# SunVox and Max 9 as the only dock entries. Dino, Audacious, Renoise,
 # Bitwig Studio and SunVox are auto-started below (backgrounded, so this
 # script returns immediately and Openbox can come up). The session has no
 # single foreground app to tie its lifetime to the way renoise-kiosk
 # ties it to Renoise; instead Openbox runs in the background and this
 # script blocks on `wait $obpid`; the session ends when Openbox exits --
-# via the C-A-End keybinding in rc.xml (Exit action) or by killing
-# Openbox. See rc.xml.
+# via the root-menu Session -> Leave item, the music-kiosk-logout
+# dockitem, or by killing Openbox from outside the session.  The
+# C-A-End Exit keybinding that used to live in rc.xml is gone; it
+# was too easy to hit while reaching for other shortcuts in
+# Renoise/Bitwig/SunVox.
 
 log=/tmp/music-kiosk.log
 exec >>"$log" 2>&1
@@ -364,6 +367,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Block until Openbox exits (C-A-End -> Exit in rc.xml, or killed).
+# Block until Openbox exits (root-menu Session -> Leave, the
+# music-kiosk-logout dockitem, or killed from outside the session).
 # `wait` returns the exit status of $obpid; ignore it (the trap cleans up).
 wait "$obpid" 2>/dev/null || true

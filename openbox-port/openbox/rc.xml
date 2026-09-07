@@ -196,9 +196,12 @@
   <keybind key="Print"><action name="Execute"><command>scrot "/home/sb/Pictures/%Y-%m-%d-%H%M%S.png"</command></action></keybind>
   <keybind key="W-c"><action name="Execute"><command>gsimplecal</command></action></keybind>
 
-  <!-- Reload / leave -->
+  <!-- Reload only.  C-A-Delete used to Exit Openbox from anywhere
+       (no prompt).  Disabled on user request; too easy to hit while
+       reaching for other shortcuts.  Leave Openbox via the root-menu
+       -> Session -> Leave music session item, or kill the openbox
+       process from outside the session. -->
   <keybind key="W-S-r"><action name="Execute"><command>openbox --reconfigure</command></action></keybind>
-  <keybind key="C-A-Delete"><action name="Exit"><prompt>no</prompt></action></keybind>
 
   <!-- Dropped, no translation (gap #2): StartTabbing has no Openbox equivalent. -->
 </keyboard>
